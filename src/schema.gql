@@ -6,10 +6,31 @@ type User {
   id: ID!
   name: String!
   email: String!
+  role: UserRole!
+  status: UserStatus!
+  bio: String
+  age: Int
   createdAt: String!
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
 type Query {
+  me: User
   users: [User!]!
   user(id: String!): User
 }
@@ -18,15 +39,41 @@ type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(input: UpdateUserInput!): User!
   removeUser(id: String!): Boolean!
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
 }
 
 input CreateUserInput {
   name: String!
   email: String!
+  password: String!
+  role: UserRole
+  status: UserStatus
+  bio: String
+  age: Int
 }
 
 input UpdateUserInput {
   id: ID!
   name: String
   email: String
+  role: UserRole
+  status: UserStatus
+  bio: String
+  age: Int
+}
+
+input RegisterInput {
+  name: String!
+  email: String!
+  password: String!
+  role: UserRole
+  status: UserStatus
+  bio: String
+  age: Int
+}
+
+input LoginInput {
+  email: String!
+  password: String!
 }

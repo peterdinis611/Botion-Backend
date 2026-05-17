@@ -15,6 +15,20 @@
       "when": 1779021972008,
       "tag": "0001_dizzy_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779024745966,
+      "tag": "0002_acoustic_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779025079267,
+      "tag": "0003_true_sabra",
+      "breakpoints": true
     }
   ]
 }
