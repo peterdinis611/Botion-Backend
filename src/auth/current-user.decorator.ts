@@ -9,6 +9,9 @@ export interface JwtPayload {
 
 export const CurrentUser = createParamDecorator(
   (data: unknown, context: ExecutionContext): JwtPayload => {
+    if (context.getType() === 'http') {
+      return context.switchToHttp().getRequest().user;
+    }
     const ctx = GqlExecutionContext.create(context);
     return ctx.getContext().req.user;
   },

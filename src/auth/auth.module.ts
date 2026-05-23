@@ -4,6 +4,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthResolver } from './auth.resolver';
 import { GqlAuthGuard } from './gql-auth.guard';
+import { HttpAuthGuard } from './http-auth.guard';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { GqlAuthGuard } from './gql-auth.guard';
       signOptions: { expiresIn: '24h' },
     }),
   ],
-  providers: [AuthService, AuthResolver, GqlAuthGuard],
-  exports: [AuthService, GqlAuthGuard],
+  providers: [AuthService, AuthResolver, GqlAuthGuard, HttpAuthGuard],
+  exports: [AuthService, GqlAuthGuard, HttpAuthGuard],
 })
 export class AuthModule {}

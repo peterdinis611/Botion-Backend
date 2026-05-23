@@ -13,6 +13,7 @@ import { TagsModule } from './tags/tags.module';
 import { CacheModule } from './cache/cache.module';
 import { FoldersModule } from './folders/folders.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     CacheModule,
     FoldersModule,
     NotificationsModule,
+    FilesModule,
   ],
 
   controllers: [AppController],
