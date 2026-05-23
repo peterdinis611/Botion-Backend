@@ -9,9 +9,7 @@ import type { JwtPayload } from '../auth/current-user.decorator';
 
 @Resolver(() => User)
 export class UsersResolver {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Query(() => User, { name: 'me', nullable: true })
   @UseGuards(GqlAuthGuard)

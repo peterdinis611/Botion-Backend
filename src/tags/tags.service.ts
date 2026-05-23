@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { tags, notesToTags } from '../drizzle/schema';
@@ -56,7 +61,9 @@ export class TagsService {
       .all();
 
     if (existing.length > 0) {
-      throw new BadRequestException(`Tag with name "${input.name}" already exists.`);
+      throw new BadRequestException(
+        `Tag with name "${input.name}" already exists.`,
+      );
     }
 
     const id = crypto.randomUUID();
@@ -119,7 +126,11 @@ export class TagsService {
     return rows.map(mapDbTagToModel);
   }
 
-  async setNoteTags(noteId: string, tagIds: string[], userId: string): Promise<void> {
+  async setNoteTags(
+    noteId: string,
+    tagIds: string[],
+    userId: string,
+  ): Promise<void> {
     if (tagIds.length > 0) {
       // Validate that all tagIds belong to the user
       const userTags = this.db
@@ -129,22 +140,18 @@ export class TagsService {
         .all();
 
       if (userTags.length !== tagIds.length) {
-        throw new BadRequestException('One or more tag IDs are invalid or do not belong to the user.');
+        throw new BadRequestException(
+          'One or more tag IDs are invalid or do not belong to the user.',
+        );
       }
     }
 
     // Clear old tags
-    this.db
-      .delete(notesToTags)
-      .where(eq(notesToTags.noteId, noteId))
-      .run();
+    this.db.delete(notesToTags).where(eq(notesToTags.noteId, noteId)).run();
 
     // Insert new tags
     for (const tagId of tagIds) {
-      this.db
-        .insert(notesToTags)
-        .values({ noteId, tagId })
-        .run();
+      this.db.insert(notesToTags).values({ noteId, tagId }).run();
     }
   }
 }

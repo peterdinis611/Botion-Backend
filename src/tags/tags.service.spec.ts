@@ -77,7 +77,10 @@ describe('TagsService', () => {
       // First call is for checking existing tags (returns empty), second call is for findOne (returns the created tag)
       db.all.mockReturnValueOnce([]).mockReturnValueOnce([mockTag]);
 
-      const result = await service.create({ name: 'NewTag', color: '#808080' }, 'user1');
+      const result = await service.create(
+        { name: 'NewTag', color: '#808080' },
+        'user1',
+      );
       expect(result).toEqual(mockTag);
       expect(db.insert).toHaveBeenCalled();
     });

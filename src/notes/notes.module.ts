@@ -18,4 +18,3 @@ import { TagsModule } from '../tags/tags.module';
   exports: [NotesService, NoteRevisionsService],
 })
 export class NotesModule {}
-

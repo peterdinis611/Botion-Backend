@@ -1,5 +1,15 @@
 import { InputType, Field, ID, Int } from '@nestjs/graphql';
-import { IsString, IsEmail, MinLength, MaxLength, IsEnum, IsInt, Min, Max, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  MaxLength,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+} from 'class-validator';
 import { UserRole, UserStatus } from './user.model';
 
 @InputType()

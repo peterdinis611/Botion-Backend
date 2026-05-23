@@ -1,5 +1,11 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsString, MinLength, MaxLength, IsOptional, Matches } from 'class-validator';
+import {
+  IsString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 
 @InputType()
 export class CreateTagInput {

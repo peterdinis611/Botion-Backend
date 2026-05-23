@@ -72,10 +72,16 @@ describe('CacheService', () => {
 
       service.clearPattern('user:1:notes:*');
 
-      expect(service.get('user:1:notes:archived:false:nb::pin::q::tags:')).toBeNull();
-      expect(service.get('user:1:notes:archived:true:nb::pin::q::tags:')).toBeNull();
+      expect(
+        service.get('user:1:notes:archived:false:nb::pin::q::tags:'),
+      ).toBeNull();
+      expect(
+        service.get('user:1:notes:archived:true:nb::pin::q::tags:'),
+      ).toBeNull();
       // user:2 key should be untouched
-      expect(service.get('user:2:notes:archived:false:nb::pin::q::tags:')).toEqual(['n3']);
+      expect(
+        service.get('user:2:notes:archived:false:nb::pin::q::tags:'),
+      ).toEqual(['n3']);
     });
 
     it('should do nothing if no keys match the pattern', () => {

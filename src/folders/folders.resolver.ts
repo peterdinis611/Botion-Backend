@@ -1,4 +1,12 @@
-import { Resolver, Query, Mutation, Args, ResolveField, Parent, ID } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+  ID,
+} from '@nestjs/graphql';
 import { FoldersService } from './folders.service';
 import { Folder } from './folder.model';
 import { CreateFolderInput, UpdateFolderInput } from './folder.dto';
@@ -64,7 +72,11 @@ export class FoldersResolver {
     @Args('notebookId', { type: () => ID }) notebookId: string,
     @Args('folderId', { type: () => ID, nullable: true }) folderId?: string,
   ) {
-    return this.foldersService.moveNotebookToFolder(notebookId, folderId ?? null, currentUser.sub);
+    return this.foldersService.moveNotebookToFolder(
+      notebookId,
+      folderId ?? null,
+      currentUser.sub,
+    );
   }
 
   @ResolveField(() => User)

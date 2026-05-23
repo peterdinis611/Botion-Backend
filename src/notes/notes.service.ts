@@ -263,7 +263,10 @@ export class NotesService {
   }
 
   async restoreRevision(revisionId: string, userId: string): Promise<Note> {
-    const revision = await this.noteRevisionsService.findOne(revisionId, userId);
+    const revision = await this.noteRevisionsService.findOne(
+      revisionId,
+      userId,
+    );
     const currentNote = await this.findOne(revision.noteId, userId);
 
     // Create a revision of the current note state before overwriting it

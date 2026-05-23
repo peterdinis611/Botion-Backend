@@ -30,9 +30,7 @@ import { FoldersModule } from './folders/folders.module';
     FoldersModule,
   ],
 
-
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-

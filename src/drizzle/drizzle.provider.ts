@@ -15,18 +15,21 @@ export const drizzleProvider: Provider = {
     const sqlite = new Database('sqlite.db');
     // Enable Write-Ahead Logging (WAL) mode for superior SQLite performance
     sqlite.pragma('journal_mode = WAL');
-    
+
     const db = drizzle(sqlite, { schema });
-    
+
     try {
       // Auto-run migrations using absolute path relative to process.cwd()
       migrate(db, { migrationsFolder: join(process.cwd(), 'drizzle') });
       console.log('Database migrations applied successfully.');
     } catch (error) {
-      console.warn('Could not run database migrations automatically:', error.message);
+      console.warn(
+        'Could not run database migrations automatically:',
+        error.message,
+      );
       console.warn('Make sure to run "pnpm db:generate" first.');
     }
-    
+
     return db;
   },
 };

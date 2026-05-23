@@ -6,11 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { NotebooksModule } from '../notebooks/notebooks.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    AuthModule,
-    forwardRef(() => NotebooksModule),
-  ],
+  imports: [UsersModule, AuthModule, forwardRef(() => NotebooksModule)],
   providers: [FoldersService, FoldersResolver],
   exports: [FoldersService],
 })

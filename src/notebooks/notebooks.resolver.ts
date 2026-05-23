@@ -1,4 +1,12 @@
-import { Resolver, Query, Mutation, Args, ResolveField, Parent, ID } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+  ID,
+} from '@nestjs/graphql';
 import { NotebooksService } from './notebooks.service';
 import { Notebook } from './notebook.model';
 import { CreateNotebookInput, UpdateNotebookInput } from './notebook.dto';

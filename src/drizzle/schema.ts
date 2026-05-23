@@ -1,4 +1,9 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+import {
+  sqliteTable,
+  text,
+  integer,
+  primaryKey,
+} from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
@@ -37,8 +42,9 @@ export const notebooks = sqliteTable('notebooks', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  folderId: text('folder_id')
-    .references(() => folders.id, { onDelete: 'set null' }),
+  folderId: text('folder_id').references(() => folders.id, {
+    onDelete: 'set null',
+  }),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
@@ -54,10 +60,13 @@ export const notes = sqliteTable('notes', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  notebookId: text('notebook_id')
-    .references(() => notebooks.id, { onDelete: 'set null' }),
+  notebookId: text('notebook_id').references(() => notebooks.id, {
+    onDelete: 'set null',
+  }),
   color: text('color').default('#ffffff').notNull(),
-  isArchived: integer('is_archived', { mode: 'boolean' }).default(false).notNull(),
+  isArchived: integer('is_archived', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false).notNull(),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
@@ -79,16 +88,20 @@ export const tags = sqliteTable('tags', {
     .notNull(),
 });
 
-export const notesToTags = sqliteTable('notes_to_tags', {
-  noteId: text('note_id')
-    .notNull()
-    .references(() => notes.id, { onDelete: 'cascade' }),
-  tagId: text('tag_id')
-    .notNull()
-    .references(() => tags.id, { onDelete: 'cascade' }),
-}, (t) => ({
-  pk: primaryKey({ columns: [t.noteId, t.tagId] }),
-}));
+export const notesToTags = sqliteTable(
+  'notes_to_tags',
+  {
+    noteId: text('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.noteId, t.tagId] }),
+  }),
+);
 
 export const noteRevisions = sqliteTable('note_revisions', {
   id: text('id').primaryKey(),
@@ -101,6 +114,3 @@ export const noteRevisions = sqliteTable('note_revisions', {
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
 });
-
-
-

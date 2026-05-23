@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 
@@ -9,9 +14,11 @@ export class GqlAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context);
     const req = ctx.getContext().req;
-    
+
     if (!req) {
-      throw new UnauthorizedException('Request context is missing in GraphQL execution.');
+      throw new UnauthorizedException(
+        'Request context is missing in GraphQL execution.',
+      );
     }
 
     const authHeader = req.headers.authorization;
@@ -21,7 +28,9 @@ export class GqlAuthGuard implements CanActivate {
 
     const [bearer, token] = authHeader.split(' ');
     if (bearer !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Invalid token format. Use Bearer <token>.');
+      throw new UnauthorizedException(
+        'Invalid token format. Use Bearer <token>.',
+      );
     }
 
     try {

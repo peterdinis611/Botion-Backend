@@ -1,5 +1,13 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsString, MinLength, MaxLength, IsOptional, Matches, IsBoolean, IsArray } from 'class-validator';
+import {
+  IsString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  Matches,
+  IsBoolean,
+  IsArray,
+} from 'class-validator';
 
 @InputType()
 export class CreateNoteInput {
@@ -11,7 +19,9 @@ export class CreateNoteInput {
 
   @Field()
   @IsString()
-  @MaxLength(10000, { message: 'Content must be at most 10000 characters long' })
+  @MaxLength(10000, {
+    message: 'Content must be at most 10000 characters long',
+  })
   content: string;
 
   @Field({ nullable: true })
@@ -55,7 +65,9 @@ export class UpdateNoteInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  @MaxLength(10000, { message: 'Content must be at most 10000 characters long' })
+  @MaxLength(10000, {
+    message: 'Content must be at most 10000 characters long',
+  })
   content?: string;
 
   @Field({ nullable: true })

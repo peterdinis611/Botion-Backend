@@ -10,7 +10,11 @@ import * as crypto from 'crypto';
 export class NoteRevisionsService {
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
 
-  async createRevision(noteId: string, title: string, content: string): Promise<void> {
+  async createRevision(
+    noteId: string,
+    title: string,
+    content: string,
+  ): Promise<void> {
     const id = crypto.randomUUID();
     const newRevision = {
       id,
@@ -21,7 +25,10 @@ export class NoteRevisionsService {
     this.db.insert(noteRevisions).values(newRevision).run();
   }
 
-  async findAllForNote(noteId: string, userId: string): Promise<NoteRevision[]> {
+  async findAllForNote(
+    noteId: string,
+    userId: string,
+  ): Promise<NoteRevision[]> {
     const rows = this.db
       .select({
         id: noteRevisions.id,
@@ -55,7 +62,9 @@ export class NoteRevisionsService {
 
     const revision = results[0];
     if (!revision) {
-      throw new NotFoundException(`Revision with ID "${revisionId}" not found.`);
+      throw new NotFoundException(
+        `Revision with ID "${revisionId}" not found.`,
+      );
     }
 
     return revision;

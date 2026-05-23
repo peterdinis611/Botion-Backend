@@ -1,4 +1,9 @@
-import { Injectable, Inject, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { users } from '../drizzle/schema';
@@ -45,7 +50,11 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<DbUser | null> {
-    const results = this.db.select().from(users).where(eq(users.email, email)).all();
+    const results = this.db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .all();
     return results[0] || null;
   }
 
@@ -53,7 +62,9 @@ export class UsersService {
     // Check if email is already taken
     const existingUser = await this.findByEmail(input.email);
     if (existingUser) {
-      throw new ConflictException(`Email "${input.email}" is already registered.`);
+      throw new ConflictException(
+        `Email "${input.email}" is already registered.`,
+      );
     }
 
     // Encrypt raw password
@@ -76,7 +87,7 @@ export class UsersService {
 
   async update(input: UpdateUserInput): Promise<User> {
     const { id, ...updateData } = input;
-    
+
     // Verify user exists first
     await this.findOne(id, true);
 
@@ -84,7 +95,9 @@ export class UsersService {
     if (updateData.email) {
       const existingUser = await this.findByEmail(updateData.email);
       if (existingUser && existingUser.id !== id) {
-        throw new ConflictException(`Email "${updateData.email}" is already in use by another user.`);
+        throw new ConflictException(
+          `Email "${updateData.email}" is already in use by another user.`,
+        );
       }
     }
 

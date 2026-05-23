@@ -1,4 +1,12 @@
-import { Resolver, Query, Mutation, Args, ResolveField, Parent, ID } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+  ID,
+} from '@nestjs/graphql';
 import { NotesService } from './notes.service';
 import { Note } from './note.model';
 import { CreateNoteInput, UpdateNoteInput } from './note.dto';
@@ -30,7 +38,11 @@ export class NotesResolver {
   @Query(() => [Note], { name: 'notes' })
   async getNotes(
     @CurrentUser() currentUser: JwtPayload,
-    @Args('includeArchived', { type: () => Boolean, nullable: true, defaultValue: false })
+    @Args('includeArchived', {
+      type: () => Boolean,
+      nullable: true,
+      defaultValue: false,
+    })
     includeArchived: boolean,
     @Args('notebookId', { type: () => ID, nullable: true })
     notebookId?: string,

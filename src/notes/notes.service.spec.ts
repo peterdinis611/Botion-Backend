@@ -71,7 +71,9 @@ describe('NotesService', () => {
 
   describe('findAll', () => {
     it('should return cached result on cache hit without querying the DB', async () => {
-      const cached = [{ id: '1', title: 'Cached', content: 'Body', userId: 'user1' }];
+      const cached = [
+        { id: '1', title: 'Cached', content: 'Body', userId: 'user1' },
+      ];
       cacheService.get.mockReturnValue(cached);
 
       const result = await service.findAll('user1', { includeArchived: false });
@@ -124,7 +126,10 @@ describe('NotesService', () => {
       cacheService.get.mockReturnValue(null);
       db.all.mockReturnValue(mockNotes);
 
-      const result = await service.findAll('user1', { includeArchived: false, folderId: 'folder1' });
+      const result = await service.findAll('user1', {
+        includeArchived: false,
+        folderId: 'folder1',
+      });
 
       expect(db.select).toHaveBeenCalled();
       expect(cacheService.set).toHaveBeenCalledWith(
@@ -149,9 +154,16 @@ describe('NotesService', () => {
 
     it('should query DB and cache the result on cache miss', async () => {
       const mockNote = {
-        id: '1', title: 'Miss', content: 'y', userId: 'user1',
-        notebookId: null, color: '#ffffff', isArchived: false, isPinned: false,
-        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
+        id: '1',
+        title: 'Miss',
+        content: 'y',
+        userId: 'user1',
+        notebookId: null,
+        color: '#ffffff',
+        isArchived: false,
+        isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z',
+        updatedAt: '2026-05-23T15:00:00.000Z',
       };
       cacheService.get.mockReturnValue(null);
       db.all.mockReturnValue([mockNote]);
@@ -159,7 +171,11 @@ describe('NotesService', () => {
       const result = await service.findOne('1', 'user1');
 
       expect(db.select).toHaveBeenCalled();
-      expect(cacheService.set).toHaveBeenCalledWith('note:1:user:user1', expect.any(Object), 60_000);
+      expect(cacheService.set).toHaveBeenCalledWith(
+        'note:1:user:user1',
+        expect.any(Object),
+        60_000,
+      );
       expect(result.id).toBe('1');
     });
   });
@@ -167,48 +183,88 @@ describe('NotesService', () => {
   describe('create', () => {
     it('should create a note and invalidate the list cache', async () => {
       const mockNote = {
-        id: '1', title: 'New Note', content: 'Content', userId: 'user1',
-        notebookId: 'notebook1', color: '#ffffff', isArchived: false, isPinned: true,
-        createdAt: '2026-05-23T15:18:21.000Z', updatedAt: '2026-05-23T15:18:21.000Z',
+        id: '1',
+        title: 'New Note',
+        content: 'Content',
+        userId: 'user1',
+        notebookId: 'notebook1',
+        color: '#ffffff',
+        isArchived: false,
+        isPinned: true,
+        createdAt: '2026-05-23T15:18:21.000Z',
+        updatedAt: '2026-05-23T15:18:21.000Z',
       };
       db.all.mockReturnValue([mockNote]);
 
       await service.create(
-        { title: 'New Note', content: 'Content', notebookId: 'notebook1', isPinned: true, tagIds: ['tag1'] },
+        {
+          title: 'New Note',
+          content: 'Content',
+          notebookId: 'notebook1',
+          isPinned: true,
+          tagIds: ['tag1'],
+        },
         'user1',
       );
 
       expect(db.insert).toHaveBeenCalled();
-      expect(tagsService.setNoteTags).toHaveBeenCalledWith('1', ['tag1'], 'user1');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(tagsService.setNoteTags).toHaveBeenCalledWith(
+        '1',
+        ['tag1'],
+        'user1',
+      );
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
     });
   });
 
   describe('update', () => {
     it('should create a revision, update DB, and invalidate caches', async () => {
       const mockCurrentNote = {
-        id: '1', title: 'Original', content: 'Old', userId: 'user1',
-        color: '#ffffff', isArchived: false, isPinned: false,
-        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
+        id: '1',
+        title: 'Original',
+        content: 'Old',
+        userId: 'user1',
+        color: '#ffffff',
+        isArchived: false,
+        isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z',
+        updatedAt: '2026-05-23T15:00:00.000Z',
       };
       const mockUpdated = { ...mockCurrentNote, title: 'Updated' };
 
-      db.all.mockReturnValueOnce([mockCurrentNote]).mockReturnValueOnce([mockUpdated]);
+      db.all
+        .mockReturnValueOnce([mockCurrentNote])
+        .mockReturnValueOnce([mockUpdated]);
 
       await service.update({ id: '1', title: 'Updated' }, 'user1');
 
-      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith('1', 'Original', 'Old');
+      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith(
+        '1',
+        'Original',
+        'Old',
+      );
       expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
     });
   });
 
   describe('remove', () => {
     it('should delete note and invalidate its caches', async () => {
       const mockNote = {
-        id: '1', title: 'To Delete', content: 'bye', userId: 'user1',
-        notebookId: null, color: '#ffffff', isArchived: false, isPinned: false,
-        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
+        id: '1',
+        title: 'To Delete',
+        content: 'bye',
+        userId: 'user1',
+        notebookId: null,
+        color: '#ffffff',
+        isArchived: false,
+        isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z',
+        updatedAt: '2026-05-23T15:00:00.000Z',
       };
       db.all.mockReturnValue([mockNote]);
 
@@ -217,22 +273,37 @@ describe('NotesService', () => {
       expect(result).toBe(true);
       expect(db.delete).toHaveBeenCalled();
       expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
     });
   });
 
   describe('restoreRevision', () => {
     it('should restore note and invalidate caches', async () => {
       const mockRevision = {
-        id: 'rev1', noteId: '1', title: 'Restored Title', content: 'Restored Body',
+        id: 'rev1',
+        noteId: '1',
+        title: 'Restored Title',
+        content: 'Restored Body',
         createdAt: '2026-05-23T15:00:00.000Z',
       };
       const mockCurrentNote = {
-        id: '1', title: 'Current', content: 'Now', userId: 'user1',
-        color: '#ffffff', isArchived: false, isPinned: false,
-        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
+        id: '1',
+        title: 'Current',
+        content: 'Now',
+        userId: 'user1',
+        color: '#ffffff',
+        isArchived: false,
+        isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z',
+        updatedAt: '2026-05-23T15:00:00.000Z',
       };
-      const mockRestoredNote = { ...mockCurrentNote, title: 'Restored Title', content: 'Restored Body' };
+      const mockRestoredNote = {
+        ...mockCurrentNote,
+        title: 'Restored Title',
+        content: 'Restored Body',
+      };
 
       noteRevisionsService.findOne.mockResolvedValue(mockRevision);
       db.all
@@ -241,9 +312,15 @@ describe('NotesService', () => {
 
       await service.restoreRevision('rev1', 'user1');
 
-      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith('1', 'Current', 'Now');
+      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith(
+        '1',
+        'Current',
+        'Now',
+      );
       expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
     });
   });
 });

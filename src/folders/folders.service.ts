@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { folders, notebooks } from '../drizzle/schema';
@@ -129,7 +134,7 @@ export class FoldersService {
     // Invalidate caches
     this.cacheService.delete(`folder:${id}:user:${userId}`);
     this.cacheService.delete(`user:${userId}:folders`);
-    
+
     // Notebooks inside this folder will have their folderId set to null (due to set null reference)
     // Invalidate notebooks caches and notes caches for safety
     this.cacheService.delete(`user:${userId}:notebooks`);
@@ -139,7 +144,11 @@ export class FoldersService {
     return true;
   }
 
-  async moveNotebookToFolder(notebookId: string, folderId: string | null, userId: string): Promise<Notebook> {
+  async moveNotebookToFolder(
+    notebookId: string,
+    folderId: string | null,
+    userId: string,
+  ): Promise<Notebook> {
     // Ensure notebook exists and belongs to user
     const notebook = await this.notebooksService.findOne(notebookId, userId);
     const oldFolderId = notebook.folderId;

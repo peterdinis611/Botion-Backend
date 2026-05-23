@@ -52,7 +52,15 @@ describe('NotebooksService', () => {
 
   describe('findAll', () => {
     it('should return cached result on cache hit without querying the DB', async () => {
-      const cached = [{ id: '1', name: 'Cached Notebook', color: '#ffffff', userId: 'user1', folderId: 'folder1' }];
+      const cached = [
+        {
+          id: '1',
+          name: 'Cached Notebook',
+          color: '#ffffff',
+          userId: 'user1',
+          folderId: 'folder1',
+        },
+      ];
       cacheService.get.mockReturnValue(cached);
 
       const result = await service.findAll('user1');
@@ -80,14 +88,24 @@ describe('NotebooksService', () => {
       const result = await service.findAll('user1');
 
       expect(db.select).toHaveBeenCalled();
-      expect(cacheService.set).toHaveBeenCalledWith('user:user1:notebooks', expect.any(Array), 60_000);
+      expect(cacheService.set).toHaveBeenCalledWith(
+        'user:user1:notebooks',
+        expect.any(Array),
+        60_000,
+      );
       expect(result).toEqual(mockNotebooks);
     });
   });
 
   describe('findOne', () => {
     it('should return cached notebook on cache hit', async () => {
-      const cached = { id: '1', name: 'Cached', color: '#ffffff', userId: 'user1', folderId: 'folder1' };
+      const cached = {
+        id: '1',
+        name: 'Cached',
+        color: '#ffffff',
+        userId: 'user1',
+        folderId: 'folder1',
+      };
       cacheService.get.mockReturnValue(cached);
 
       const result = await service.findOne('1', 'user1');
@@ -112,7 +130,11 @@ describe('NotebooksService', () => {
       const result = await service.findOne('1', 'user1');
 
       expect(db.select).toHaveBeenCalled();
-      expect(cacheService.set).toHaveBeenCalledWith('notebook:1:user:user1', expect.any(Object), 60_000);
+      expect(cacheService.set).toHaveBeenCalledWith(
+        'notebook:1:user:user1',
+        expect.any(Object),
+        60_000,
+      );
       expect(result).toEqual(mockNotebook);
     });
 
@@ -120,7 +142,9 @@ describe('NotebooksService', () => {
       cacheService.get.mockReturnValue(null);
       db.all.mockReturnValue([]);
 
-      await expect(service.findOne('1', 'user1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('1', 'user1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -137,11 +161,16 @@ describe('NotebooksService', () => {
       };
       db.all.mockReturnValue([mockNotebook]);
 
-      const result = await service.create({ name: 'New Notebook', color: '#ff0000', folderId: 'folder1' }, 'user1');
+      const result = await service.create(
+        { name: 'New Notebook', color: '#ff0000', folderId: 'folder1' },
+        'user1',
+      );
 
       expect(db.insert).toHaveBeenCalled();
       expect(cacheService.delete).toHaveBeenCalledWith('user:user1:notebooks');
-      expect(cacheService.delete).toHaveBeenCalledWith('folder:folder1:user:user1');
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        'folder:folder1:user:user1',
+      );
       expect(result).toEqual(mockNotebook);
     });
   });
@@ -157,22 +186,37 @@ describe('NotebooksService', () => {
         createdAt: '2026-05-23T15:00:00.000Z',
         updatedAt: '2026-05-23T15:00:00.000Z',
       };
-      const mockUpdated = { ...mockCurrent, name: 'Updated Name', folderId: 'folder_new' };
+      const mockUpdated = {
+        ...mockCurrent,
+        name: 'Updated Name',
+        folderId: 'folder_new',
+      };
 
       // First findOne (check existence) returns original via cache hit
       // Second findOne (return updated) returns updated via DB mock on cache miss (since delete was called)
-      cacheService.get.mockReturnValueOnce(mockCurrent).mockReturnValueOnce(null);
+      cacheService.get
+        .mockReturnValueOnce(mockCurrent)
+        .mockReturnValueOnce(null);
       db.all.mockReturnValue([mockUpdated]);
 
-      const result = await service.update({ id: '1', name: 'Updated Name', folderId: 'folder_new' }, 'user1');
+      const result = await service.update(
+        { id: '1', name: 'Updated Name', folderId: 'folder_new' },
+        'user1',
+      );
 
       expect(db.update).toHaveBeenCalled();
       expect(cacheService.delete).toHaveBeenCalledWith('notebook:1:user:user1');
       expect(cacheService.delete).toHaveBeenCalledWith('user:user1:notebooks');
-      expect(cacheService.delete).toHaveBeenCalledWith('folder:folder_new:user:user1');
-      expect(cacheService.delete).toHaveBeenCalledWith('folder:folder_old:user:user1');
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        'folder:folder_new:user:user1',
+      );
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        'folder:folder_old:user:user1',
+      );
       expect(cacheService.delete).toHaveBeenCalledWith('user:user1:folders');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
       expect(result).toEqual(mockUpdated);
     });
   });
@@ -196,8 +240,12 @@ describe('NotebooksService', () => {
       expect(db.delete).toHaveBeenCalled();
       expect(cacheService.delete).toHaveBeenCalledWith('notebook:1:user:user1');
       expect(cacheService.delete).toHaveBeenCalledWith('user:user1:notebooks');
-      expect(cacheService.delete).toHaveBeenCalledWith('folder:folder1:user:user1');
-      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        'folder:folder1:user:user1',
+      );
+      expect(cacheService.clearPattern).toHaveBeenCalledWith(
+        'user:user1:notes:*',
+      );
     });
   });
 });
