@@ -29,35 +29,181 @@ type AuthPayload {
   user: User!
 }
 
+type Folder {
+  id: ID!
+  name: String!
+  color: String!
+  sortOrder: Float!
+  userId: String!
+  user: User
+  notebooks: [Notebook!]
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Notebook {
+  id: ID!
+  name: String!
+  color: String!
+  sortOrder: Float!
+  userId: String!
+  folderId: ID
+  folder: Folder
+  user: User
+  notes: [Note!]
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Tag {
+  id: ID!
+  name: String!
+  color: String!
+  userId: String!
+  user: User
+  createdAt: String!
+}
+
+type NoteRevision {
+  id: ID!
+  noteId: String!
+  title: String!
+  content: String!
+  createdAt: String!
+}
+
 type Note {
   id: ID!
   title: String!
   content: String!
   userId: String!
   user: User
+  notebookId: String
+  notebook: Notebook
   color: String!
   isArchived: Boolean!
+  isPinned: Boolean!
+  tags: [Tag!]
+  revisions: [NoteRevision!]
   createdAt: String!
   updatedAt: String!
+}
+
+type NoteShare {
+  id: ID!
+  noteId: ID!
+  sharedWithUserId: ID!
+  permission: String!
+  createdAt: String!
+  sharedWithUser: User
+  note: Note
+}
+
+type Notification {
+  id: ID!
+  userId: String!
+  type: String!
+  message: String!
+  isRead: Boolean!
+  createdAt: String!
+}
+
+type CalendarEvent {
+  id: ID!
+  title: String!
+  description: String
+  userId: String!
+  user: User
+  startAt: String!
+  endAt: String!
+  allDay: Boolean!
+  color: String!
+  location: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type AppEvent {
+  action: AppEventAction!
+  userId: String!
+  entityId: ID
+  notification: Notification
+  note: Note
+  calendarEvent: CalendarEvent
+}
+
+enum AppEventAction {
+  NOTIFICATION_CREATED
+  NOTE_CREATED
+  NOTE_UPDATED
+  NOTE_DELETED
+  NOTE_SHARED
+  CALENDAR_EVENT_CREATED
+  CALENDAR_EVENT_UPDATED
+  CALENDAR_EVENT_DELETED
 }
 
 type Query {
   me: User
   users: [User!]!
   user(id: String!): User
-  notes(includeArchived: Boolean = false): [Note!]!
+  notes(includeArchived: Boolean = false, notebookId: ID, folderId: ID, isPinned: Boolean, searchQuery: String, tagIds: [String!]): [Note!]!
   note(id: ID!): Note!
+  noteShares(noteId: ID!): [NoteShare!]!
+  notebooks: [Notebook!]!
+  notebook(id: ID!): Notebook!
+  tags: [Tag!]!
+  notifications: [Notification!]!
+  folders: [Folder!]!
+  folder(id: ID!): Folder!
+  calendarEvents(from: String, to: String): [CalendarEvent!]!
+  calendarEvent(id: ID!): CalendarEvent!
 }
 
 type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
   createUser(input: CreateUserInput!): User!
   updateUser(input: UpdateUserInput!): User!
   removeUser(id: String!): Boolean!
-  register(input: RegisterInput!): AuthPayload!
-  login(input: LoginInput!): AuthPayload!
   createNote(input: CreateNoteInput!): Note!
   updateNote(input: UpdateNoteInput!): Note!
+  restoreNoteRevision(revisionId: ID!): Note!
   removeNote(id: ID!): Boolean!
+  shareNote(input: ShareNoteInput!): NoteShare!
+  unshareNote(input: UnshareNoteInput!): Boolean!
+  createNotebook(input: CreateNotebookInput!): Notebook!
+  updateNotebook(input: UpdateNotebookInput!): Notebook!
+  removeNotebook(id: ID!): Boolean!
+  reorderNotebooks(ids: [ID!]!, folderId: ID): [Notebook!]!
+  createTag(input: CreateTagInput!): Tag!
+  updateTag(input: UpdateTagInput!): Tag!
+  removeTag(id: ID!): Boolean!
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead: Boolean!
+  createFolder(input: CreateFolderInput!): Folder!
+  updateFolder(input: UpdateFolderInput!): Folder!
+  removeFolder(id: ID!): Boolean!
+  reorderFolders(ids: [ID!]!): [Folder!]!
+  moveNotebookToFolder(notebookId: ID!, folderId: ID): Notebook!
+  createCalendarEvent(input: CreateCalendarEventInput!): CalendarEvent!
+  updateCalendarEvent(input: UpdateCalendarEventInput!): CalendarEvent!
+  removeCalendarEvent(id: ID!): Boolean!
+}
+
+input RegisterInput {
+  name: String!
+  email: String!
+  password: String!
+  role: UserRole
+  status: UserStatus
+  bio: String
+  age: Int
+}
+
+input LoginInput {
+  email: String!
+  password: String!
 }
 
 input CreateUserInput {
@@ -80,25 +226,13 @@ input UpdateUserInput {
   age: Int
 }
 
-input RegisterInput {
-  name: String!
-  email: String!
-  password: String!
-  role: UserRole
-  status: UserStatus
-  bio: String
-  age: Int
-}
-
-input LoginInput {
-  email: String!
-  password: String!
-}
-
 input CreateNoteInput {
   title: String!
   content: String!
   color: String
+  notebookId: String
+  isPinned: Boolean
+  tagIds: [String!]
 }
 
 input UpdateNoteInput {
@@ -107,4 +241,84 @@ input UpdateNoteInput {
   content: String
   color: String
   isArchived: Boolean
+  notebookId: String
+  isPinned: Boolean
+  tagIds: [String!]
+}
+
+input ShareNoteInput {
+  noteId: ID!
+  sharedWithEmail: String!
+  permission: SharePermission!
+}
+
+enum SharePermission {
+  READ
+  WRITE
+}
+
+input UnshareNoteInput {
+  noteId: ID!
+  sharedWithUserId: ID!
+}
+
+input CreateNotebookInput {
+  name: String!
+  color: String
+  folderId: ID
+}
+
+input UpdateNotebookInput {
+  id: ID!
+  name: String
+  color: String
+  folderId: ID
+}
+
+input CreateTagInput {
+  name: String!
+  color: String
+}
+
+input UpdateTagInput {
+  id: ID!
+  name: String
+  color: String
+}
+
+input CreateFolderInput {
+  name: String!
+  color: String
+}
+
+input UpdateFolderInput {
+  id: ID!
+  name: String
+  color: String
+}
+
+input CreateCalendarEventInput {
+  title: String!
+  description: String
+  startAt: String!
+  endAt: String!
+  allDay: Boolean
+  color: String
+  location: String
+}
+
+input UpdateCalendarEventInput {
+  id: ID!
+  title: String
+  description: String
+  startAt: String
+  endAt: String
+  allDay: Boolean
+  color: String
+  location: String
+}
+
+type Subscription {
+  notificationAdded: Notification!
+  appEvent(actions: [AppEventAction!]): AppEvent!
 }

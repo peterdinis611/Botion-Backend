@@ -69,6 +69,19 @@ export class NotebooksResolver {
     return this.notebooksService.remove(id, currentUser.sub);
   }
 
+  @Mutation(() => [Notebook], { name: 'reorderNotebooks' })
+  async reorderNotebooks(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('ids', { type: () => [ID] }) ids: string[],
+    @Args('folderId', { type: () => ID, nullable: true }) folderId?: string,
+  ) {
+    return this.notebooksService.reorder(
+      currentUser.sub,
+      folderId ?? null,
+      ids,
+    );
+  }
+
   @ResolveField(() => User)
   async user(@Parent() notebook: Notebook) {
     return this.usersService.findOne(notebook.userId);

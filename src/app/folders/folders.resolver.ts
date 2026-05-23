@@ -66,6 +66,14 @@ export class FoldersResolver {
     return this.foldersService.remove(id, currentUser.sub);
   }
 
+  @Mutation(() => [Folder], { name: 'reorderFolders' })
+  async reorderFolders(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('ids', { type: () => [ID] }) ids: string[],
+  ) {
+    return this.foldersService.reorder(currentUser.sub, ids);
+  }
+
   @Mutation(() => Notebook)
   async moveNotebookToFolder(
     @CurrentUser() currentUser: JwtPayload,

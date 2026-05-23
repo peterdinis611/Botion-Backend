@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { notebooks } from '../../drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc, isNull } from 'drizzle-orm';
 import { CreateNotebookInput, UpdateNotebookInput } from './notebook.dto';
 import { Notebook } from './notebook.model';
 import * as crypto from 'crypto';
@@ -17,6 +17,7 @@ export function mapDbNotebookToModel(dbNotebook: DbNotebook): Notebook {
     id: dbNotebook.id,
     name: dbNotebook.name,
     color: dbNotebook.color,
+    sortOrder: dbNotebook.sortOrder,
     userId: dbNotebook.userId,
     folderId: dbNotebook.folderId ?? undefined,
     createdAt: dbNotebook.createdAt,
@@ -42,6 +43,7 @@ export class NotebooksService {
       .select()
       .from(notebooks)
       .where(eq(notebooks.userId, userId))
+      .orderBy(asc(notebooks.sortOrder))
       .all();
 
     const result = rows.map(mapDbNotebookToModel);
@@ -72,14 +74,33 @@ export class NotebooksService {
     return model;
   }
 
+  private nextNotebookSortOrder(
+    userId: string,
+    folderId: string | null,
+  ): number {
+    const condition = folderId
+      ? and(eq(notebooks.userId, userId), eq(notebooks.folderId, folderId))
+      : and(eq(notebooks.userId, userId), isNull(notebooks.folderId));
+
+    const rows = this.db
+      .select({ sortOrder: notebooks.sortOrder })
+      .from(notebooks)
+      .where(condition)
+      .all();
+    if (rows.length === 0) return 0;
+    return Math.max(...rows.map((r) => r.sortOrder)) + 1;
+  }
+
   async create(input: CreateNotebookInput, userId: string): Promise<Notebook> {
     const id = crypto.randomUUID();
+    const folderId = input.folderId ?? null;
     const newNotebook = {
       id,
       name: input.name,
       userId,
       color: input.color ?? '#ffffff',
-      folderId: input.folderId ?? null,
+      folderId,
+      sortOrder: this.nextNotebookSortOrder(userId, folderId),
     };
 
     this.db.insert(notebooks).values(newNotebook).run();
@@ -156,5 +177,39 @@ export class NotebooksService {
     }
 
     return true;
+  }
+
+  async reorder(
+    userId: string,
+    folderId: string | null,
+    ids: string[],
+  ): Promise<Notebook[]> {
+    const all = await this.findAll(userId);
+    const inScope = all.filter((nb) =>
+      folderId === null ? !nb.folderId : nb.folderId === folderId,
+    );
+    const scopeIds = new Set(inScope.map((nb) => nb.id));
+    for (const id of ids) {
+      if (!scopeIds.has(id)) {
+        throw new NotFoundException(`Notebook with ID "${id}" not found.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+    ids.forEach((id, index) => {
+      this.db
+        .update(notebooks)
+        .set({ sortOrder: index, updatedAt: now })
+        .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)))
+        .run();
+    });
+
+    this.cacheService.delete(`user:${userId}:notebooks`);
+    if (folderId) {
+      this.cacheService.delete(`folder:${folderId}:user:${userId}`);
+    }
+    this.cacheService.delete(`user:${userId}:folders`);
+
+    return this.findAll(userId);
   }
 }

@@ -14,6 +14,9 @@ export class Folder {
   color: string;
 
   @Field()
+  sortOrder: number;
+
+  @Field()
   userId: string;
 
   @Field(() => User, { nullable: true })

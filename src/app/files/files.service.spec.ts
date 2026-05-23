@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FilesService } from './files.service';
 import { BadRequestException } from '@nestjs/common';
-import { mkdir, rm } from 'fs/promises';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 
 jest.mock('crypto', () => ({
@@ -49,6 +49,31 @@ describe('FilesService', () => {
     const listed = await service.list(testUserId);
     expect(listed).toHaveLength(1);
     expect(listed[0].id).toBe('test-file-id');
+  });
+
+  it('deletes expired files during cleanup', async () => {
+    const oldDate = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const userDir = join(process.cwd(), 'tmp', testUserId);
+
+    await writeFile(join(userDir, 'old-id.txt'), 'stale');
+    await writeFile(
+      join(userDir, '.uploads.json'),
+      JSON.stringify([
+        {
+          id: 'old-id',
+          originalName: 'old.txt',
+          storedName: 'old-id.txt',
+          mimeType: 'text/plain',
+          size: 5,
+          uploadedAt: oldDate,
+        },
+      ]),
+    );
+
+    const result = await service.cleanupExpiredFiles();
+
+    expect(result.deletedFiles).toBe(1);
+    expect(await service.list(testUserId)).toHaveLength(0);
   });
 
   it('rejects empty uploads', async () => {

@@ -25,6 +25,7 @@ export const folders = sqliteTable('folders', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   color: text('color').default('#ffffff').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
@@ -40,6 +41,7 @@ export const notebooks = sqliteTable('notebooks', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   color: text('color').default('#ffffff').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),

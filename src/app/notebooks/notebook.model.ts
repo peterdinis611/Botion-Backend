@@ -15,6 +15,9 @@ export class Notebook {
   color: string;
 
   @Field()
+  sortOrder: number;
+
+  @Field()
   userId: string;
 
   @Field(() => ID, { nullable: true })

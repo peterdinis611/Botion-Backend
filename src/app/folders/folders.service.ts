@@ -7,7 +7,7 @@ import {
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { folders, notebooks } from '../../drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 import { CreateFolderInput, UpdateFolderInput } from './folder.dto';
 import { Folder } from './folder.model';
 import * as crypto from 'crypto';
@@ -24,6 +24,7 @@ export function mapDbFolderToModel(dbFolder: DbFolder): Folder {
     id: dbFolder.id,
     name: dbFolder.name,
     color: dbFolder.color,
+    sortOrder: dbFolder.sortOrder,
     userId: dbFolder.userId,
     createdAt: dbFolder.createdAt,
     updatedAt: dbFolder.updatedAt,
@@ -50,6 +51,7 @@ export class FoldersService {
       .select()
       .from(folders)
       .where(eq(folders.userId, userId))
+      .orderBy(asc(folders.sortOrder))
       .all();
 
     const result = rows.map(mapDbFolderToModel);
@@ -80,6 +82,16 @@ export class FoldersService {
     return model;
   }
 
+  private nextFolderSortOrder(userId: string): number {
+    const rows = this.db
+      .select({ sortOrder: folders.sortOrder })
+      .from(folders)
+      .where(eq(folders.userId, userId))
+      .all();
+    if (rows.length === 0) return 0;
+    return Math.max(...rows.map((r) => r.sortOrder)) + 1;
+  }
+
   async create(input: CreateFolderInput, userId: string): Promise<Folder> {
     const id = crypto.randomUUID();
     const newFolder = {
@@ -87,6 +99,7 @@ export class FoldersService {
       name: input.name,
       userId,
       color: input.color ?? '#ffffff',
+      sortOrder: this.nextFolderSortOrder(userId),
     };
 
     this.db.insert(folders).values(newFolder).run();
@@ -182,5 +195,27 @@ export class FoldersService {
     this.cacheService.clearPattern(`user:${userId}:notes:*`);
 
     return this.notebooksService.findOne(notebookId, userId);
+  }
+
+  async reorder(userId: string, ids: string[]): Promise<Folder[]> {
+    const existing = await this.findAll(userId);
+    const existingIds = new Set(existing.map((f) => f.id));
+    for (const id of ids) {
+      if (!existingIds.has(id)) {
+        throw new NotFoundException(`Folder with ID "${id}" not found.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+    ids.forEach((id, index) => {
+      this.db
+        .update(folders)
+        .set({ sortOrder: index, updatedAt: now })
+        .where(and(eq(folders.id, id), eq(folders.userId, userId)))
+        .run();
+    });
+
+    this.cacheService.delete(`user:${userId}:folders`);
+    return this.findAll(userId);
   }
 }
