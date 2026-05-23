@@ -2,10 +2,13 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { notes } from '../drizzle/schema';
-import { eq, and, or, like, desc } from 'drizzle-orm';
+import { eq, and, or, like, desc, exists, inArray } from 'drizzle-orm';
 import { CreateNoteInput, UpdateNoteInput } from './note.dto';
 import { Note } from './note.model';
 import * as crypto from 'crypto';
+import { TagsService } from '../tags/tags.service';
+import { NoteRevisionsService } from './note-revisions.service';
+import { notesToTags } from '../drizzle/schema';
 
 export type DbNote = typeof notes.$inferSelect;
 
@@ -26,7 +29,11 @@ export function mapDbNoteToModel(dbNote: DbNote): Note {
 
 @Injectable()
 export class NotesService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    private readonly tagsService: TagsService,
+    private readonly noteRevisionsService: NoteRevisionsService,
+  ) {}
 
   async findAll(
     userId: string,
@@ -37,12 +44,14 @@ export class NotesService {
           notebookId?: string;
           isPinned?: boolean;
           searchQuery?: string;
+          tagIds?: string[];
         },
   ): Promise<Note[]> {
     let includeArchived = false;
     let notebookId: string | undefined;
     let isPinned: boolean | undefined;
     let searchQuery: string | undefined;
+    let tagIds: string[] | undefined;
 
     if (typeof optionsOrIncludeArchived === 'boolean') {
       includeArchived = optionsOrIncludeArchived;
@@ -51,6 +60,7 @@ export class NotesService {
       notebookId = optionsOrIncludeArchived.notebookId;
       isPinned = optionsOrIncludeArchived.isPinned;
       searchQuery = optionsOrIncludeArchived.searchQuery;
+      tagIds = optionsOrIncludeArchived.tagIds;
     }
 
     const conditions = [eq(notes.userId, userId)];
@@ -73,6 +83,22 @@ export class NotesService {
         or(
           like(notes.title, likePattern),
           like(notes.content, likePattern),
+        ),
+      );
+    }
+
+    if (tagIds && tagIds.length > 0) {
+      conditions.push(
+        exists(
+          this.db
+            .select()
+            .from(notesToTags)
+            .where(
+              and(
+                eq(notesToTags.noteId, notes.id),
+                inArray(notesToTags.tagId, tagIds),
+              ),
+            ),
         ),
       );
     }
@@ -104,26 +130,39 @@ export class NotesService {
 
   async create(input: CreateNoteInput, userId: string): Promise<Note> {
     const id = crypto.randomUUID();
+    const { tagIds, ...noteData } = input;
     const newNote = {
       id,
-      title: input.title,
-      content: input.content,
+      title: noteData.title,
+      content: noteData.content,
       userId,
-      notebookId: input.notebookId ?? null,
-      color: input.color ?? '#ffffff',
+      notebookId: noteData.notebookId ?? null,
+      color: noteData.color ?? '#ffffff',
       isArchived: false,
-      isPinned: input.isPinned ?? false,
+      isPinned: noteData.isPinned ?? false,
     };
 
     this.db.insert(notes).values(newNote).run();
+
+    if (tagIds && tagIds.length > 0) {
+      await this.tagsService.setNoteTags(id, tagIds, userId);
+    }
+
     return this.findOne(id, userId);
   }
 
   async update(input: UpdateNoteInput, userId: string): Promise<Note> {
-    const { id, ...updateData } = input;
+    const { id, tagIds, ...updateData } = input;
     
     // Ensure the note exists and belongs to this user
-    await this.findOne(id, userId);
+    const currentNote = await this.findOne(id, userId);
+
+    // Create a revision of the current note state before applying the updates
+    await this.noteRevisionsService.createRevision(
+      currentNote.id,
+      currentNote.title,
+      currentNote.content,
+    );
 
     // Clean undefined fields to avoid overwriting with null
     const cleanedData = Object.fromEntries(
@@ -139,7 +178,35 @@ export class NotesService {
       .where(and(eq(notes.id, id), eq(notes.userId, userId)))
       .run();
 
+    if (tagIds !== undefined) {
+      await this.tagsService.setNoteTags(id, tagIds, userId);
+    }
+
     return this.findOne(id, userId);
+  }
+
+  async restoreRevision(revisionId: string, userId: string): Promise<Note> {
+    const revision = await this.noteRevisionsService.findOne(revisionId, userId);
+    const currentNote = await this.findOne(revision.noteId, userId);
+
+    // Create a revision of the current note state before overwriting it
+    await this.noteRevisionsService.createRevision(
+      currentNote.id,
+      currentNote.title,
+      currentNote.content,
+    );
+
+    this.db
+      .update(notes)
+      .set({
+        title: revision.title,
+        content: revision.content,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(and(eq(notes.id, revision.noteId), eq(notes.userId, userId)))
+      .run();
+
+    return this.findOne(revision.noteId, userId);
   }
 
   async remove(id: string, userId: string): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
@@ -49,5 +49,41 @@ export const notes = sqliteTable('notes', {
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
 });
+
+export const tags = sqliteTable('tags', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').default('#808080').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+export const notesToTags = sqliteTable('notes_to_tags', {
+  noteId: text('note_id')
+    .notNull()
+    .references(() => notes.id, { onDelete: 'cascade' }),
+  tagId: text('tag_id')
+    .notNull()
+    .references(() => tags.id, { onDelete: 'cascade' }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.noteId, t.tagId] }),
+}));
+
+export const noteRevisions = sqliteTable('note_revisions', {
+  id: text('id').primaryKey(),
+  noteId: text('note_id')
+    .notNull()
+    .references(() => notes.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
 
 

@@ -1,6 +1,8 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { User } from '../users/user.model';
 import { Notebook } from '../notebooks/notebook.model';
+import { Tag } from '../tags/tag.model';
+import { NoteRevision } from './note-revision.model';
 
 @ObjectType()
 export class Note {
@@ -34,9 +36,16 @@ export class Note {
   @Field()
   isPinned: boolean;
 
+  @Field(() => [Tag], { nullable: true })
+  tags?: Tag[];
+
+  @Field(() => [NoteRevision], { nullable: true })
+  revisions?: NoteRevision[];
+
   @Field()
   createdAt: string;
 
   @Field()
   updatedAt: string;
 }
+

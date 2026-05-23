@@ -10,6 +10,10 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
 import { Notebook } from '../notebooks/notebook.model';
 import { NotebooksService } from '../notebooks/notebooks.service';
+import { Tag } from '../tags/tag.model';
+import { TagsService } from '../tags/tags.service';
+import { NoteRevision } from './note-revision.model';
+import { NoteRevisionsService } from './note-revisions.service';
 
 @Resolver(() => Note)
 @UseGuards(GqlAuthGuard)
@@ -19,6 +23,8 @@ export class NotesResolver {
     private readonly usersService: UsersService,
     @Inject(forwardRef(() => NotebooksService))
     private readonly notebooksService: NotebooksService,
+    private readonly tagsService: TagsService,
+    private readonly noteRevisionsService: NoteRevisionsService,
   ) {}
 
   @Query(() => [Note], { name: 'notes' })
@@ -32,12 +38,15 @@ export class NotesResolver {
     isPinned?: boolean,
     @Args('searchQuery', { type: () => String, nullable: true })
     searchQuery?: string,
+    @Args('tagIds', { type: () => [String], nullable: true })
+    tagIds?: string[],
   ) {
     return this.notesService.findAll(currentUser.sub, {
       includeArchived,
       notebookId,
       isPinned,
       searchQuery,
+      tagIds,
     });
   }
 
@@ -65,6 +74,14 @@ export class NotesResolver {
     return this.notesService.update(input, currentUser.sub);
   }
 
+  @Mutation(() => Note)
+  async restoreNoteRevision(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('revisionId', { type: () => ID }) revisionId: string,
+  ) {
+    return this.notesService.restoreRevision(revisionId, currentUser.sub);
+  }
+
   @Mutation(() => Boolean)
   async removeNote(
     @CurrentUser() currentUser: JwtPayload,
@@ -84,5 +101,15 @@ export class NotesResolver {
       return null;
     }
     return this.notebooksService.findOne(note.notebookId, note.userId);
+  }
+
+  @ResolveField(() => [Tag])
+  async tags(@Parent() note: Note) {
+    return this.tagsService.findTagsForNote(note.id);
+  }
+
+  @ResolveField(() => [NoteRevision])
+  async revisions(@Parent() note: Note) {
+    return this.noteRevisionsService.findAllForNote(note.id, note.userId);
   }
 }

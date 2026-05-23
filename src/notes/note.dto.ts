@@ -1,5 +1,5 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsString, MinLength, MaxLength, IsOptional, Matches, IsBoolean } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, Matches, IsBoolean, IsArray } from 'class-validator';
 
 @InputType()
 export class CreateNoteInput {
@@ -31,6 +31,12 @@ export class CreateNoteInput {
   @IsOptional()
   @IsBoolean({ message: 'isPinned must be a boolean' })
   isPinned?: boolean;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
 }
 
 @InputType()
@@ -74,4 +80,10 @@ export class UpdateNoteInput {
   @IsOptional()
   @IsBoolean({ message: 'isPinned must be a boolean' })
   isPinned?: boolean;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
 }

@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { NotesModule } from './notes/notes.module';
 import { NotebooksModule } from './notebooks/notebooks.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -22,7 +23,9 @@ import { NotebooksModule } from './notebooks/notebooks.module';
     AuthModule,
     NotesModule,
     NotebooksModule,
+    TagsModule,
   ],
+
 
   controllers: [AppController],
   providers: [AppService],
