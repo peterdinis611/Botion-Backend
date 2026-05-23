@@ -144,3 +144,23 @@ export const notifications = sqliteTable('notifications', {
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
 });
+
+export const calendarEvents = sqliteTable('calendar_events', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  startAt: text('start_at').notNull(),
+  endAt: text('end_at').notNull(),
+  allDay: integer('all_day', { mode: 'boolean' }).default(false).notNull(),
+  color: text('color').default('#3b82f6').notNull(),
+  location: text('location'),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: text('updated_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});

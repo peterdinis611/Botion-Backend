@@ -1,0 +1,14 @@
+CREATE TABLE `calendar_events` (
+	`id` text PRIMARY KEY NOT NULL,
+	`title` text NOT NULL,
+	`description` text,
+	`user_id` text NOT NULL,
+	`start_at` text NOT NULL,
+	`end_at` text NOT NULL,
+	`all_day` integer DEFAULT false NOT NULL,
+	`color` text DEFAULT '#3b82f6' NOT NULL,
+	`location` text,
+	`created_at` text DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`updated_at` text DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
