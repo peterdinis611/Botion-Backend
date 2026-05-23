@@ -4,6 +4,8 @@ import { DRIZZLE } from '../drizzle/drizzle.provider';
 import { TagsService } from '../tags/tags.service';
 import { NoteRevisionsService } from './note-revisions.service';
 import { CacheService } from '../cache/cache.service';
+import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 
 jest.mock('crypto', () => ({
@@ -17,6 +19,8 @@ describe('NotesService', () => {
   let tagsService: any;
   let noteRevisionsService: any;
   let cacheService: any;
+  let usersService: any;
+  let notificationsService: any;
 
   beforeEach(async () => {
     db = {
@@ -52,6 +56,18 @@ describe('NotesService', () => {
       clearPattern: jest.fn(),
     };
 
+    usersService = {
+      findOne: jest.fn(),
+      findByEmail: jest.fn(),
+    };
+
+    notificationsService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      markAsRead: jest.fn(),
+      markAllAsRead: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotesService,
@@ -59,6 +75,8 @@ describe('NotesService', () => {
         { provide: TagsService, useValue: tagsService },
         { provide: NoteRevisionsService, useValue: noteRevisionsService },
         { provide: CacheService, useValue: cacheService },
+        { provide: UsersService, useValue: usersService },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 

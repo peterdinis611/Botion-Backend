@@ -1,4 +1,11 @@
-import { InputType, Field, ID } from '@nestjs/graphql';
+import { InputType, Field, ID, registerEnumType } from '@nestjs/graphql';
+
+export enum SharePermission {
+  READ = 'READ',
+  WRITE = 'WRITE',
+}
+
+registerEnumType(SharePermission, { name: 'SharePermission' });
 import {
   IsString,
   MinLength,
@@ -98,4 +105,29 @@ export class UpdateNoteInput {
   @IsArray()
   @IsString({ each: true })
   tagIds?: string[];
+}
+
+@InputType()
+export class ShareNoteInput {
+  @Field(() => ID)
+  @IsString()
+  noteId: string;
+
+  @Field()
+  @IsString()
+  sharedWithEmail: string;
+
+  @Field(() => SharePermission)
+  permission: SharePermission;
+}
+
+@InputType()
+export class UnshareNoteInput {
+  @Field(() => ID)
+  @IsString()
+  noteId: string;
+
+  @Field(() => ID)
+  @IsString()
+  sharedWithUserId: string;
 }

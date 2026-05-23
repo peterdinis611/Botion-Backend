@@ -9,7 +9,8 @@ import {
 } from '@nestjs/graphql';
 import { NotesService } from './notes.service';
 import { Note } from './note.model';
-import { CreateNoteInput, UpdateNoteInput } from './note.dto';
+import { CreateNoteInput, UpdateNoteInput, ShareNoteInput, UnshareNoteInput } from './note.dto';
+import { NoteShare } from './note-share.model';
 import { User } from '../users/user.model';
 import { UsersService } from '../users/users.service';
 import { UseGuards, Inject, forwardRef } from '@nestjs/common';
@@ -104,6 +105,43 @@ export class NotesResolver {
   ) {
     return this.notesService.remove(id, currentUser.sub);
   }
+
+  // ─── Sharing ─────────────────────────────────────────────────────────────────
+
+  @Query(() => [NoteShare], { name: 'noteShares' })
+  async getNoteShares(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('noteId', { type: () => ID }) noteId: string,
+  ) {
+    return this.notesService.findSharesForNote(noteId, currentUser.sub);
+  }
+
+  @Mutation(() => NoteShare)
+  async shareNote(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: ShareNoteInput,
+  ) {
+    return this.notesService.shareNote(
+      input.noteId,
+      input.sharedWithEmail,
+      input.permission,
+      currentUser.sub,
+    );
+  }
+
+  @Mutation(() => Boolean)
+  async unshareNote(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: UnshareNoteInput,
+  ) {
+    return this.notesService.unshareNote(
+      input.noteId,
+      input.sharedWithUserId,
+      currentUser.sub,
+    );
+  }
+
+  // ─── Resolved Fields ──────────────────────────────────────────────────────────
 
   @ResolveField(() => User)
   async user(@Parent() note: Note) {

@@ -12,6 +12,7 @@ import { NotebooksModule } from './notebooks/notebooks.module';
 import { TagsModule } from './tags/tags.module';
 import { CacheModule } from './cache/cache.module';
 import { FoldersModule } from './folders/folders.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,9 +29,11 @@ import { FoldersModule } from './folders/folders.module';
     TagsModule,
     CacheModule,
     FoldersModule,
+    NotificationsModule,
   ],
 
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

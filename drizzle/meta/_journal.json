@@ -57,6 +57,13 @@
       "when": 1779544084664,
       "tag": "0007_mighty_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779544311083,
+      "tag": "0008_eager_starjammers",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { NotebooksModule } from '../notebooks/notebooks.module';
 import { NoteRevisionsService } from './note-revisions.service';
 import { TagsModule } from '../tags/tags.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TagsModule } from '../tags/tags.module';
     AuthModule,
     forwardRef(() => NotebooksModule),
     TagsModule,
+    NotificationsModule,
   ],
   providers: [NotesService, NotesResolver, NoteRevisionsService],
   exports: [NotesService, NoteRevisionsService],

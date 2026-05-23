@@ -3,6 +3,7 @@ import {
   text,
   integer,
   primaryKey,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
@@ -110,6 +111,35 @@ export const noteRevisions = sqliteTable('note_revisions', {
     .references(() => notes.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   content: text('content').notNull(),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+export const noteShares = sqliteTable('note_shares', {
+  id: text('id').primaryKey(),
+  noteId: text('note_id')
+    .notNull()
+    .references(() => notes.id, { onDelete: 'cascade' }),
+  sharedWithUserId: text('shared_with_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  permission: text('permission').default('READ').notNull(),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+}, (t) => ({
+  unq: uniqueIndex('note_shares_note_id_shared_with_user_id_unique').on(t.noteId, t.sharedWithUserId),
+}));
+
+export const notifications = sqliteTable('notifications', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  message: text('message').notNull(),
+  isRead: integer('is_read', { mode: 'boolean' }).default(false).notNull(),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
