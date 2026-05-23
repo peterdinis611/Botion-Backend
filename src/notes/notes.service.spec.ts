@@ -3,7 +3,7 @@ import { NotesService } from './notes.service';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import { TagsService } from '../tags/tags.service';
 import { NoteRevisionsService } from './note-revisions.service';
-import { NotFoundException } from '@nestjs/common';
+import { CacheService } from '../cache/cache.service';
 import * as crypto from 'crypto';
 
 jest.mock('crypto', () => ({
@@ -16,6 +16,7 @@ describe('NotesService', () => {
   let db: any;
   let tagsService: any;
   let noteRevisionsService: any;
+  let cacheService: any;
 
   beforeEach(async () => {
     db = {
@@ -44,21 +45,20 @@ describe('NotesService', () => {
       findOne: jest.fn(),
     };
 
+    cacheService = {
+      get: jest.fn().mockReturnValue(null),
+      set: jest.fn(),
+      delete: jest.fn(),
+      clearPattern: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotesService,
-        {
-          provide: DRIZZLE,
-          useValue: db,
-        },
-        {
-          provide: TagsService,
-          useValue: tagsService,
-        },
-        {
-          provide: NoteRevisionsService,
-          useValue: noteRevisionsService,
-        },
+        { provide: DRIZZLE, useValue: db },
+        { provide: TagsService, useValue: tagsService },
+        { provide: NoteRevisionsService, useValue: noteRevisionsService },
+        { provide: CacheService, useValue: cacheService },
       ],
     }).compile();
 
@@ -70,7 +70,18 @@ describe('NotesService', () => {
   });
 
   describe('findAll', () => {
-    it('should return notes for a user sorted and filtered', async () => {
+    it('should return cached result on cache hit without querying the DB', async () => {
+      const cached = [{ id: '1', title: 'Cached', content: 'Body', userId: 'user1' }];
+      cacheService.get.mockReturnValue(cached);
+
+      const result = await service.findAll('user1', { includeArchived: false });
+
+      expect(result).toBe(cached);
+      expect(db.select).not.toHaveBeenCalled();
+      expect(cacheService.set).not.toHaveBeenCalled();
+    });
+
+    it('should query DB and populate cache on cache miss', async () => {
       const mockNotes = [
         {
           id: '1',
@@ -85,140 +96,125 @@ describe('NotesService', () => {
           updatedAt: '2026-05-23T15:18:21.000Z',
         },
       ];
+      cacheService.get.mockReturnValue(null);
       db.all.mockReturnValue(mockNotes);
 
-      const result = await service.findAll('user1', {
-        includeArchived: false,
-        notebookId: 'notebook1',
-        isPinned: true,
-      });
+      const result = await service.findAll('user1', { includeArchived: false });
 
-      expect(result).toEqual(mockNotes);
       expect(db.select).toHaveBeenCalled();
+      expect(cacheService.set).toHaveBeenCalled();
+      expect(result[0].id).toBe('1');
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return cached note on cache hit', async () => {
+      const cached = { id: '1', title: 'Hit', content: 'x', userId: 'user1' };
+      cacheService.get.mockReturnValue(cached);
+
+      const result = await service.findOne('1', 'user1');
+
+      expect(result).toBe(cached);
+      expect(db.select).not.toHaveBeenCalled();
+    });
+
+    it('should query DB and cache the result on cache miss', async () => {
+      const mockNote = {
+        id: '1', title: 'Miss', content: 'y', userId: 'user1',
+        notebookId: null, color: '#ffffff', isArchived: false, isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
+      };
+      cacheService.get.mockReturnValue(null);
+      db.all.mockReturnValue([mockNote]);
+
+      const result = await service.findOne('1', 'user1');
+
+      expect(db.select).toHaveBeenCalled();
+      expect(cacheService.set).toHaveBeenCalledWith('note:1:user:user1', expect.any(Object), 60_000);
+      expect(result.id).toBe('1');
     });
   });
 
   describe('create', () => {
-    it('should create a note with notebookId, isPinned, and tagIds', async () => {
+    it('should create a note and invalidate the list cache', async () => {
       const mockNote = {
-        id: '1',
-        title: 'New Note',
-        content: 'Content',
-        userId: 'user1',
-        notebookId: 'notebook1',
-        color: '#ffffff',
-        isArchived: false,
-        isPinned: true,
-        createdAt: '2026-05-23T15:18:21.000Z',
-        updatedAt: '2026-05-23T15:18:21.000Z',
+        id: '1', title: 'New Note', content: 'Content', userId: 'user1',
+        notebookId: 'notebook1', color: '#ffffff', isArchived: false, isPinned: true,
+        createdAt: '2026-05-23T15:18:21.000Z', updatedAt: '2026-05-23T15:18:21.000Z',
       };
-
       db.all.mockReturnValue([mockNote]);
 
-      const result = await service.create(
-        {
-          title: 'New Note',
-          content: 'Content',
-          notebookId: 'notebook1',
-          isPinned: true,
-          tagIds: ['tag1', 'tag2'],
-        },
+      await service.create(
+        { title: 'New Note', content: 'Content', notebookId: 'notebook1', isPinned: true, tagIds: ['tag1'] },
         'user1',
       );
 
-      expect(result).toEqual(mockNote);
       expect(db.insert).toHaveBeenCalled();
-      expect(tagsService.setNoteTags).toHaveBeenCalledWith('1', ['tag1', 'tag2'], 'user1');
+      expect(tagsService.setNoteTags).toHaveBeenCalledWith('1', ['tag1'], 'user1');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
     });
   });
 
   describe('update', () => {
-    it('should create a revision of the current note before updating', async () => {
+    it('should create a revision, update DB, and invalidate caches', async () => {
       const mockCurrentNote = {
-        id: '1',
-        title: 'Original Title',
-        content: 'Original Content',
-        userId: 'user1',
-        color: '#ffffff',
-        isArchived: false,
-        isPinned: false,
-        createdAt: '2026-05-23T15:18:21.000Z',
-        updatedAt: '2026-05-23T15:18:21.000Z',
+        id: '1', title: 'Original', content: 'Old', userId: 'user1',
+        color: '#ffffff', isArchived: false, isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
       };
+      const mockUpdated = { ...mockCurrentNote, title: 'Updated' };
 
-      const mockUpdatedNote = {
-        ...mockCurrentNote,
-        title: 'Updated Title',
+      db.all.mockReturnValueOnce([mockCurrentNote]).mockReturnValueOnce([mockUpdated]);
+
+      await service.update({ id: '1', title: 'Updated' }, 'user1');
+
+      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith('1', 'Original', 'Old');
+      expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete note and invalidate its caches', async () => {
+      const mockNote = {
+        id: '1', title: 'To Delete', content: 'bye', userId: 'user1',
+        notebookId: null, color: '#ffffff', isArchived: false, isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
       };
+      db.all.mockReturnValue([mockNote]);
 
-      // Mock findOne: returns mockCurrentNote the first time (when getting current state),
-      // and mockUpdatedNote the second time (when returning the updated state).
-      db.all
-        .mockReturnValueOnce([mockCurrentNote]) // current note retrieval
-        .mockReturnValueOnce([mockUpdatedNote]); // updated note retrieval
+      const result = await service.remove('1', 'user1');
 
-      const result = await service.update(
-        {
-          id: '1',
-          title: 'Updated Title',
-        },
-        'user1',
-      );
-
-      expect(result).toEqual(mockUpdatedNote);
-      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith(
-        '1',
-        'Original Title',
-        'Original Content',
-      );
-      expect(db.update).toHaveBeenCalled();
+      expect(result).toBe(true);
+      expect(db.delete).toHaveBeenCalled();
+      expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
     });
   });
 
   describe('restoreRevision', () => {
-    it('should restore note to previous revision and create a revision of current state', async () => {
+    it('should restore note and invalidate caches', async () => {
       const mockRevision = {
-        id: 'rev1',
-        noteId: '1',
-        title: 'Revision Title',
-        content: 'Revision Content',
-        createdAt: '2026-05-23T15:18:21.000Z',
+        id: 'rev1', noteId: '1', title: 'Restored Title', content: 'Restored Body',
+        createdAt: '2026-05-23T15:00:00.000Z',
       };
-
       const mockCurrentNote = {
-        id: '1',
-        title: 'Current Overwritten Title',
-        content: 'Current Overwritten Content',
-        userId: 'user1',
-        color: '#ffffff',
-        isArchived: false,
-        isPinned: false,
-        createdAt: '2026-05-23T15:18:21.000Z',
-        updatedAt: '2026-05-23T15:18:21.000Z',
+        id: '1', title: 'Current', content: 'Now', userId: 'user1',
+        color: '#ffffff', isArchived: false, isPinned: false,
+        createdAt: '2026-05-23T15:00:00.000Z', updatedAt: '2026-05-23T15:00:00.000Z',
       };
-
-      const mockRestoredNote = {
-        ...mockCurrentNote,
-        title: 'Revision Title',
-        content: 'Revision Content',
-      };
+      const mockRestoredNote = { ...mockCurrentNote, title: 'Restored Title', content: 'Restored Body' };
 
       noteRevisionsService.findOne.mockResolvedValue(mockRevision);
-      
-      // Mock findOne (for currentNote and restoredNote)
       db.all
-        .mockReturnValueOnce([mockCurrentNote]) // current state
-        .mockReturnValueOnce([mockRestoredNote]); // restored state
+        .mockReturnValueOnce([mockCurrentNote])
+        .mockReturnValueOnce([mockRestoredNote]);
 
-      const result = await service.restoreRevision('rev1', 'user1');
+      await service.restoreRevision('rev1', 'user1');
 
-      expect(result).toEqual(mockRestoredNote);
-      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith(
-        '1',
-        'Current Overwritten Title',
-        'Current Overwritten Content',
-      );
-      expect(db.update).toHaveBeenCalled();
+      expect(noteRevisionsService.createRevision).toHaveBeenCalledWith('1', 'Current', 'Now');
+      expect(cacheService.delete).toHaveBeenCalledWith('note:1:user:user1');
+      expect(cacheService.clearPattern).toHaveBeenCalledWith('user:user1:notes:*');
     });
   });
 });

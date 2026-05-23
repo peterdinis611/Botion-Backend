@@ -6,6 +6,9 @@ import { eq, and } from 'drizzle-orm';
 import { CreateNotebookInput, UpdateNotebookInput } from './notebook.dto';
 import { Notebook } from './notebook.model';
 import * as crypto from 'crypto';
+import { CacheService } from '../cache/cache.service';
+
+const NOTEBOOK_TTL_MS = 60_000; // 60 seconds
 
 export type DbNotebook = typeof notebooks.$inferSelect;
 
@@ -22,18 +25,36 @@ export function mapDbNotebookToModel(dbNotebook: DbNotebook): Notebook {
 
 @Injectable()
 export class NotebooksService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async findAll(userId: string): Promise<Notebook[]> {
+    const cacheKey = `user:${userId}:notebooks`;
+    const cached = this.cacheService.get<Notebook[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const rows = this.db
       .select()
       .from(notebooks)
       .where(eq(notebooks.userId, userId))
       .all();
-    return rows.map(mapDbNotebookToModel);
+
+    const result = rows.map(mapDbNotebookToModel);
+    this.cacheService.set(cacheKey, result, NOTEBOOK_TTL_MS);
+    return result;
   }
 
   async findOne(id: string, userId: string): Promise<Notebook> {
+    const cacheKey = `notebook:${id}:user:${userId}`;
+    const cached = this.cacheService.get<Notebook>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const results = this.db
       .select()
       .from(notebooks)
@@ -45,7 +66,9 @@ export class NotebooksService {
       throw new NotFoundException(`Notebook with ID "${id}" not found.`);
     }
 
-    return mapDbNotebookToModel(notebook);
+    const model = mapDbNotebookToModel(notebook);
+    this.cacheService.set(cacheKey, model, NOTEBOOK_TTL_MS);
+    return model;
   }
 
   async create(input: CreateNotebookInput, userId: string): Promise<Notebook> {
@@ -58,6 +81,10 @@ export class NotebooksService {
     };
 
     this.db.insert(notebooks).values(newNotebook).run();
+
+    // Invalidate notebook list for this user
+    this.cacheService.delete(`user:${userId}:notebooks`);
+
     return this.findOne(id, userId);
   }
 
@@ -81,6 +108,12 @@ export class NotebooksService {
       .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)))
       .run();
 
+    // Invalidate stale caches
+    this.cacheService.delete(`notebook:${id}:user:${userId}`);
+    this.cacheService.delete(`user:${userId}:notebooks`);
+    // Notes list may reflect notebook name/metadata changes
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
+
     return this.findOne(id, userId);
   }
 
@@ -92,6 +125,12 @@ export class NotebooksService {
       .delete(notebooks)
       .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)))
       .run();
+
+    // Invalidate stale caches
+    this.cacheService.delete(`notebook:${id}:user:${userId}`);
+    this.cacheService.delete(`user:${userId}:notebooks`);
+    // Notes that belonged to this notebook will have notebookId set to null — invalidate list
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
 
     return true;
   }

@@ -9,6 +9,9 @@ import * as crypto from 'crypto';
 import { TagsService } from '../tags/tags.service';
 import { NoteRevisionsService } from './note-revisions.service';
 import { notesToTags } from '../drizzle/schema';
+import { CacheService } from '../cache/cache.service';
+
+const NOTE_TTL_MS = 60_000; // 60 seconds
 
 export type DbNote = typeof notes.$inferSelect;
 
@@ -33,7 +36,28 @@ export class NotesService {
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly tagsService: TagsService,
     private readonly noteRevisionsService: NoteRevisionsService,
+    private readonly cacheService: CacheService,
   ) {}
+
+  private buildListKey(
+    userId: string,
+    options: {
+      includeArchived: boolean;
+      notebookId?: string;
+      isPinned?: boolean;
+      searchQuery?: string;
+      tagIds?: string[];
+    },
+  ): string {
+    return [
+      `user:${userId}:notes`,
+      `archived:${options.includeArchived}`,
+      `nb:${options.notebookId ?? ''}`,
+      `pin:${options.isPinned ?? ''}`,
+      `q:${options.searchQuery ?? ''}`,
+      `tags:${(options.tagIds ?? []).sort().join(',')}`,
+    ].join(':');
+  }
 
   async findAll(
     userId: string,
@@ -61,6 +85,19 @@ export class NotesService {
       isPinned = optionsOrIncludeArchived.isPinned;
       searchQuery = optionsOrIncludeArchived.searchQuery;
       tagIds = optionsOrIncludeArchived.tagIds;
+    }
+
+    const cacheKey = this.buildListKey(userId, {
+      includeArchived,
+      notebookId,
+      isPinned,
+      searchQuery,
+      tagIds,
+    });
+
+    const cached = this.cacheService.get<Note[]>(cacheKey);
+    if (cached) {
+      return cached;
     }
 
     const conditions = [eq(notes.userId, userId)];
@@ -110,10 +147,18 @@ export class NotesService {
       .orderBy(desc(notes.isPinned), desc(notes.updatedAt))
       .all();
 
-    return rows.map(mapDbNoteToModel);
+    const result = rows.map(mapDbNoteToModel);
+    this.cacheService.set(cacheKey, result, NOTE_TTL_MS);
+    return result;
   }
 
   async findOne(id: string, userId: string): Promise<Note> {
+    const cacheKey = `note:${id}:user:${userId}`;
+    const cached = this.cacheService.get<Note>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const results = this.db
       .select()
       .from(notes)
@@ -125,7 +170,9 @@ export class NotesService {
       throw new NotFoundException(`Note with ID "${id}" not found.`);
     }
 
-    return mapDbNoteToModel(note);
+    const model = mapDbNoteToModel(note);
+    this.cacheService.set(cacheKey, model, NOTE_TTL_MS);
+    return model;
   }
 
   async create(input: CreateNoteInput, userId: string): Promise<Note> {
@@ -148,12 +195,15 @@ export class NotesService {
       await this.tagsService.setNoteTags(id, tagIds, userId);
     }
 
+    // Invalidate the note list for this user
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
+
     return this.findOne(id, userId);
   }
 
   async update(input: UpdateNoteInput, userId: string): Promise<Note> {
     const { id, tagIds, ...updateData } = input;
-    
+
     // Ensure the note exists and belongs to this user
     const currentNote = await this.findOne(id, userId);
 
@@ -182,6 +232,10 @@ export class NotesService {
       await this.tagsService.setNoteTags(id, tagIds, userId);
     }
 
+    // Invalidate stale caches
+    this.cacheService.delete(`note:${id}:user:${userId}`);
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
+
     return this.findOne(id, userId);
   }
 
@@ -206,6 +260,10 @@ export class NotesService {
       .where(and(eq(notes.id, revision.noteId), eq(notes.userId, userId)))
       .run();
 
+    // Invalidate stale caches
+    this.cacheService.delete(`note:${revision.noteId}:user:${userId}`);
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
+
     return this.findOne(revision.noteId, userId);
   }
 
@@ -217,6 +275,10 @@ export class NotesService {
       .delete(notes)
       .where(and(eq(notes.id, id), eq(notes.userId, userId)))
       .run();
+
+    // Invalidate stale caches
+    this.cacheService.delete(`note:${id}:user:${userId}`);
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
 
     return true;
   }
