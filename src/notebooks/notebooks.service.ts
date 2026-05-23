@@ -18,6 +18,7 @@ export function mapDbNotebookToModel(dbNotebook: DbNotebook): Notebook {
     name: dbNotebook.name,
     color: dbNotebook.color,
     userId: dbNotebook.userId,
+    folderId: dbNotebook.folderId ?? undefined,
     createdAt: dbNotebook.createdAt,
     updatedAt: dbNotebook.updatedAt,
   };
@@ -78,12 +79,16 @@ export class NotebooksService {
       name: input.name,
       userId,
       color: input.color ?? '#ffffff',
+      folderId: input.folderId ?? null,
     };
 
     this.db.insert(notebooks).values(newNotebook).run();
 
     // Invalidate notebook list for this user
     this.cacheService.delete(`user:${userId}:notebooks`);
+    if (input.folderId) {
+      this.cacheService.delete(`folder:${input.folderId}:user:${userId}`);
+    }
 
     return this.findOne(id, userId);
   }
@@ -92,7 +97,8 @@ export class NotebooksService {
     const { id, ...updateData } = input;
 
     // Ensure the notebook exists and belongs to this user
-    await this.findOne(id, userId);
+    const originalNotebook = await this.findOne(id, userId);
+    const oldFolderId = originalNotebook.folderId;
 
     // Clean undefined fields to avoid overwriting with null
     const cleanedData = Object.fromEntries(
@@ -114,12 +120,25 @@ export class NotebooksService {
     // Notes list may reflect notebook name/metadata changes
     this.cacheService.clearPattern(`user:${userId}:notes:*`);
 
+    // Invalidate folders caches if folderId changed
+    if (cleanedData.folderId !== undefined) {
+      const newFolderId = cleanedData.folderId as string | null;
+      if (newFolderId) {
+        this.cacheService.delete(`folder:${newFolderId}:user:${userId}`);
+      }
+      if (oldFolderId) {
+        this.cacheService.delete(`folder:${oldFolderId}:user:${userId}`);
+      }
+      this.cacheService.delete(`user:${userId}:folders`);
+    }
+
     return this.findOne(id, userId);
   }
 
   async remove(id: string, userId: string): Promise<boolean> {
     // Ensure the notebook exists and belongs to this user
-    await this.findOne(id, userId);
+    const notebook = await this.findOne(id, userId);
+    const folderId = notebook.folderId;
 
     this.db
       .delete(notebooks)
@@ -131,6 +150,10 @@ export class NotebooksService {
     this.cacheService.delete(`user:${userId}:notebooks`);
     // Notes that belonged to this notebook will have notebookId set to null — invalidate list
     this.cacheService.clearPattern(`user:${userId}:notes:*`);
+
+    if (folderId) {
+      this.cacheService.delete(`folder:${folderId}:user:${userId}`);
+    }
 
     return true;
   }

@@ -2,7 +2,7 @@ import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsString, MinLength, MaxLength, IsOptional, Matches } from 'class-validator';
 
 @InputType()
-export class CreateNotebookInput {
+export class CreateFolderInput {
   @Field()
   @IsString()
   @MinLength(1, { message: 'Name must not be empty' })
@@ -16,15 +16,10 @@ export class CreateNotebookInput {
     message: 'Color must be a valid 6-character CSS Hex string (e.g. #ffffff)',
   })
   color?: string;
-
-  @Field(() => ID, { nullable: true })
-  @IsOptional()
-  @IsString()
-  folderId?: string;
 }
 
 @InputType()
-export class UpdateNotebookInput {
+export class UpdateFolderInput {
   @Field(() => ID)
   @IsString()
   id: string;
@@ -43,9 +38,4 @@ export class UpdateNotebookInput {
     message: 'Color must be a valid 6-character CSS Hex string (e.g. #ffffff)',
   })
   color?: string;
-
-  @Field(() => ID, { nullable: true })
-  @IsOptional()
-  @IsString()
-  folderId?: string | null;
 }

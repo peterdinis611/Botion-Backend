@@ -11,6 +11,7 @@ import { NotesModule } from './notes/notes.module';
 import { NotebooksModule } from './notebooks/notebooks.module';
 import { TagsModule } from './tags/tags.module';
 import { CacheModule } from './cache/cache.module';
+import { FoldersModule } from './folders/folders.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CacheModule } from './cache/cache.module';
     NotebooksModule,
     TagsModule,
     CacheModule,
+    FoldersModule,
   ],
 
 

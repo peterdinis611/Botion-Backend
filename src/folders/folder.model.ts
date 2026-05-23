@@ -1,10 +1,9 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { User } from '../users/user.model';
-import { Note } from '../notes/note.model';
-import { Folder } from '../folders/folder.model';
+import { Notebook } from '../notebooks/notebook.model';
 
 @ObjectType()
-export class Notebook {
+export class Folder {
   @Field(() => ID)
   id: string;
 
@@ -17,17 +16,11 @@ export class Notebook {
   @Field()
   userId: string;
 
-  @Field(() => ID, { nullable: true })
-  folderId?: string;
-
-  @Field(() => Folder, { nullable: true })
-  folder?: Folder;
-
   @Field(() => User, { nullable: true })
   user?: User;
 
-  @Field(() => [Note], { nullable: true })
-  notes?: Note[];
+  @Field(() => [Notebook], { nullable: true })
+  notebooks?: Notebook[];
 
   @Field()
   createdAt: string;

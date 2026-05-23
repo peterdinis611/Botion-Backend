@@ -6,10 +6,12 @@ import { User } from '../users/user.model';
 import { UsersService } from '../users/users.service';
 import { Note } from '../notes/note.model';
 import { NotesService } from '../notes/notes.service';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
+import { Folder } from '../folders/folder.model';
+import { FoldersService } from '../folders/folders.service';
 
 @Resolver(() => Notebook)
 @UseGuards(GqlAuthGuard)
@@ -18,6 +20,8 @@ export class NotebooksResolver {
     private readonly notebooksService: NotebooksService,
     private readonly usersService: UsersService,
     private readonly notesService: NotesService,
+    @Inject(forwardRef(() => FoldersService))
+    private readonly foldersService: FoldersService,
   ) {}
 
   @Query(() => [Notebook], { name: 'notebooks' })
@@ -69,5 +73,13 @@ export class NotebooksResolver {
       includeArchived: true,
       notebookId: notebook.id,
     });
+  }
+
+  @ResolveField(() => Folder, { nullable: true })
+  async folder(@Parent() notebook: Notebook) {
+    if (!notebook.folderId) {
+      return null;
+    }
+    return this.foldersService.findOne(notebook.folderId, notebook.userId);
   }
 }

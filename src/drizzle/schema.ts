@@ -15,6 +15,21 @@ export const users = sqliteTable('users', {
     .notNull(),
 });
 
+export const folders = sqliteTable('folders', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').default('#ffffff').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: text('updated_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
 export const notebooks = sqliteTable('notebooks', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -22,6 +37,8 @@ export const notebooks = sqliteTable('notebooks', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  folderId: text('folder_id')
+    .references(() => folders.id, { onDelete: 'set null' }),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),

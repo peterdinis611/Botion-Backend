@@ -34,6 +34,8 @@ export class NotesResolver {
     includeArchived: boolean,
     @Args('notebookId', { type: () => ID, nullable: true })
     notebookId?: string,
+    @Args('folderId', { type: () => ID, nullable: true })
+    folderId?: string,
     @Args('isPinned', { type: () => Boolean, nullable: true })
     isPinned?: boolean,
     @Args('searchQuery', { type: () => String, nullable: true })
@@ -44,6 +46,7 @@ export class NotesResolver {
     return this.notesService.findAll(currentUser.sub, {
       includeArchived,
       notebookId,
+      folderId,
       isPinned,
       searchQuery,
       tagIds,

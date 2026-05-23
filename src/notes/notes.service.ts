@@ -8,7 +8,7 @@ import { Note } from './note.model';
 import * as crypto from 'crypto';
 import { TagsService } from '../tags/tags.service';
 import { NoteRevisionsService } from './note-revisions.service';
-import { notesToTags } from '../drizzle/schema';
+import { notesToTags, notebooks } from '../drizzle/schema';
 import { CacheService } from '../cache/cache.service';
 
 const NOTE_TTL_MS = 60_000; // 60 seconds
@@ -44,6 +44,7 @@ export class NotesService {
     options: {
       includeArchived: boolean;
       notebookId?: string;
+      folderId?: string;
       isPinned?: boolean;
       searchQuery?: string;
       tagIds?: string[];
@@ -53,6 +54,7 @@ export class NotesService {
       `user:${userId}:notes`,
       `archived:${options.includeArchived}`,
       `nb:${options.notebookId ?? ''}`,
+      `folder:${options.folderId ?? ''}`,
       `pin:${options.isPinned ?? ''}`,
       `q:${options.searchQuery ?? ''}`,
       `tags:${(options.tagIds ?? []).sort().join(',')}`,
@@ -66,6 +68,7 @@ export class NotesService {
       | {
           includeArchived?: boolean;
           notebookId?: string;
+          folderId?: string;
           isPinned?: boolean;
           searchQuery?: string;
           tagIds?: string[];
@@ -73,6 +76,7 @@ export class NotesService {
   ): Promise<Note[]> {
     let includeArchived = false;
     let notebookId: string | undefined;
+    let folderId: string | undefined;
     let isPinned: boolean | undefined;
     let searchQuery: string | undefined;
     let tagIds: string[] | undefined;
@@ -82,6 +86,7 @@ export class NotesService {
     } else if (optionsOrIncludeArchived) {
       includeArchived = optionsOrIncludeArchived.includeArchived ?? false;
       notebookId = optionsOrIncludeArchived.notebookId;
+      folderId = optionsOrIncludeArchived.folderId;
       isPinned = optionsOrIncludeArchived.isPinned;
       searchQuery = optionsOrIncludeArchived.searchQuery;
       tagIds = optionsOrIncludeArchived.tagIds;
@@ -90,6 +95,7 @@ export class NotesService {
     const cacheKey = this.buildListKey(userId, {
       includeArchived,
       notebookId,
+      folderId,
       isPinned,
       searchQuery,
       tagIds,
@@ -108,6 +114,22 @@ export class NotesService {
 
     if (notebookId !== undefined) {
       conditions.push(eq(notes.notebookId, notebookId));
+    }
+
+    if (folderId !== undefined) {
+      conditions.push(
+        exists(
+          this.db
+            .select()
+            .from(notebooks)
+            .where(
+              and(
+                eq(notebooks.id, notes.notebookId),
+                eq(notebooks.folderId, folderId),
+              ),
+            ),
+        ),
+      );
     }
 
     if (isPinned !== undefined) {

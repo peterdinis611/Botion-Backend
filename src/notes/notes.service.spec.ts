@@ -105,6 +105,35 @@ describe('NotesService', () => {
       expect(cacheService.set).toHaveBeenCalled();
       expect(result[0].id).toBe('1');
     });
+
+    it('should query DB filtering by folderId on cache miss', async () => {
+      const mockNotes = [
+        {
+          id: '2',
+          title: 'Folder Note',
+          content: 'This is in a folder',
+          userId: 'user1',
+          notebookId: 'notebook1',
+          color: '#ffffff',
+          isArchived: false,
+          isPinned: false,
+          createdAt: '2026-05-23T15:18:21.000Z',
+          updatedAt: '2026-05-23T15:18:21.000Z',
+        },
+      ];
+      cacheService.get.mockReturnValue(null);
+      db.all.mockReturnValue(mockNotes);
+
+      const result = await service.findAll('user1', { includeArchived: false, folderId: 'folder1' });
+
+      expect(db.select).toHaveBeenCalled();
+      expect(cacheService.set).toHaveBeenCalledWith(
+        'user:user1:notes:archived:false:nb::folder:folder1:pin::q::tags:',
+        expect.any(Array),
+        60_000,
+      );
+      expect(result[0].id).toBe('2');
+    });
   });
 
   describe('findOne', () => {

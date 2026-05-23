@@ -50,6 +50,13 @@
       "when": 1779543234094,
       "tag": "0006_flippant_vertigo",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1779544084664,
+      "tag": "0007_mighty_sersi",
+      "breakpoints": true
     }
   ]
 }
