@@ -116,12 +116,13 @@ export class NotesService {
 
     if (searchQuery) {
       const likePattern = `%${searchQuery}%`;
-      conditions.push(
-        or(
-          like(notes.title, likePattern),
-          like(notes.content, likePattern),
-        ),
+      const searchCondition = or(
+        like(notes.title, likePattern),
+        like(notes.content, likePattern),
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     if (tagIds && tagIds.length > 0) {
