@@ -4,32 +4,52 @@ import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { CreateUserInput, UpdateUserInput } from './user.dto';
+import { User, UserRole, UserStatus } from './user.model';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
+
+export type DbUser = typeof users.$inferSelect;
+
+export function mapDbUserToModel(dbUser: DbUser): User {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    role: dbUser.role as UserRole,
+    status: dbUser.status as UserStatus,
+    bio: dbUser.bio ?? undefined,
+    age: dbUser.age ?? undefined,
+    createdAt: dbUser.createdAt,
+  };
+}
 
 @Injectable()
 export class UsersService {
   constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
 
-  async findAll() {
-    return this.db.select().from(users).all();
+  async findAll(): Promise<User[]> {
+    const rows = this.db.select().from(users).all();
+    return rows.map(mapDbUserToModel);
   }
 
-  async findOne(id: string, throwOnNotFound = true) {
+  async findOne(id: string, throwOnNotFound = true): Promise<User> {
     const results = this.db.select().from(users).where(eq(users.id, id)).all();
     const user = results[0];
-    if (!user && throwOnNotFound) {
+    if (!user) {
+      if (throwOnNotFound) {
+        throw new NotFoundException(`User with ID "${id}" not found.`);
+      }
       throw new NotFoundException(`User with ID "${id}" not found.`);
     }
-    return user || null;
+    return mapDbUserToModel(user);
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<DbUser | null> {
     const results = this.db.select().from(users).where(eq(users.email, email)).all();
     return results[0] || null;
   }
 
-  async create(input: CreateUserInput) {
+  async create(input: CreateUserInput): Promise<User> {
     // Check if email is already taken
     const existingUser = await this.findByEmail(input.email);
     if (existingUser) {
@@ -54,7 +74,7 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async update(input: UpdateUserInput) {
+  async update(input: UpdateUserInput): Promise<User> {
     const { id, ...updateData } = input;
     
     // Verify user exists first
@@ -76,7 +96,7 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<boolean> {
     // Verify user exists
     await this.findOne(id, true);
     this.db.delete(users).where(eq(users.id, id)).run();

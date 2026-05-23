@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { NotesModule } from './notes/notes.module';
+import { NotebooksModule } from './notebooks/notebooks.module';
 
 @Module({
   imports: [
@@ -18,7 +20,10 @@ import { AuthModule } from './auth/auth.module';
     DrizzleModule,
     UsersModule,
     AuthModule,
+    NotesModule,
+    NotebooksModule,
   ],
+
   controllers: [AppController],
   providers: [AppService],
 })

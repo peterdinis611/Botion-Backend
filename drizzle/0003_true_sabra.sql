@@ -11,7 +11,7 @@ CREATE TABLE `__new_users` (
 	`created_at` text DEFAULT (CURRENT_TIMESTAMP) NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `__new_users`("id", "name", "email", "role", "status", "bio", "age", "password_hash", "created_at") SELECT "id", "name", "email", "role", "status", "bio", "age", "password_hash", "created_at" FROM `users`;--> statement-breakpoint
+INSERT INTO `__new_users`("id", "name", "email", "role", "status", "bio", "age", "created_at") SELECT "id", "name", "email", "role", "status", "bio", "age", "created_at" FROM `users`;--> statement-breakpoint
 DROP TABLE `users`;--> statement-breakpoint
 ALTER TABLE `__new_users` RENAME TO `users`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint

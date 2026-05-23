@@ -1,7 +1,8 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
+import { UsersService, mapDbUserToModel } from '../users/users.service';
 import { RegisterInput, LoginInput, AuthPayload } from './auth.dto';
+import { User } from '../users/user.model';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -22,7 +23,7 @@ export class AuthService {
       role: user.role,
     });
 
-    return { token, user: user as any };
+    return { token, user };
   }
 
   async login(input: LoginInput): Promise<AuthPayload> {
@@ -44,6 +45,6 @@ export class AuthService {
       role: user.role,
     });
 
-    return { token, user: user as any };
+    return { token, user: mapDbUserToModel(user) };
   }
 }

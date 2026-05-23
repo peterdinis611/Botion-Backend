@@ -5,6 +5,7 @@ import { CreateUserInput, UpdateUserInput } from './user.dto';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { JwtPayload } from '../auth/current-user.decorator';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -14,7 +15,7 @@ export class UsersResolver {
 
   @Query(() => User, { name: 'me', nullable: true })
   @UseGuards(GqlAuthGuard)
-  async getMe(@CurrentUser() currentUser: any) {
+  async getMe(@CurrentUser() currentUser: JwtPayload) {
     return this.usersService.findOne(currentUser.sub);
   }
 

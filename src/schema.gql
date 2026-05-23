@@ -29,10 +29,24 @@ type AuthPayload {
   user: User!
 }
 
+type Note {
+  id: ID!
+  title: String!
+  content: String!
+  userId: String!
+  user: User
+  color: String!
+  isArchived: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Query {
   me: User
   users: [User!]!
   user(id: String!): User
+  notes(includeArchived: Boolean = false): [Note!]!
+  note(id: ID!): Note!
 }
 
 type Mutation {
@@ -41,6 +55,9 @@ type Mutation {
   removeUser(id: String!): Boolean!
   register(input: RegisterInput!): AuthPayload!
   login(input: LoginInput!): AuthPayload!
+  createNote(input: CreateNoteInput!): Note!
+  updateNote(input: UpdateNoteInput!): Note!
+  removeNote(id: ID!): Boolean!
 }
 
 input CreateUserInput {
@@ -76,4 +93,18 @@ input RegisterInput {
 input LoginInput {
   email: String!
   password: String!
+}
+
+input CreateNoteInput {
+  title: String!
+  content: String!
+  color: String
+}
+
+input UpdateNoteInput {
+  id: ID!
+  title: String
+  content: String
+  color: String
+  isArchived: Boolean
 }
