@@ -43,9 +43,7 @@ export class GraphsService {
       }
       return JSON.stringify(parsed);
     } catch {
-      throw new BadRequestException(
-        `${field} must be a valid JSON array.`,
-      );
+      throw new BadRequestException(`${field} must be a valid JSON array.`);
     }
   }
 
@@ -53,12 +51,18 @@ export class GraphsService {
     if (raw === undefined || raw === null || raw === '') return null;
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
         throw new Error('not object');
       }
       return JSON.stringify(parsed);
     } catch {
-      throw new BadRequestException('viewportJson must be a valid JSON object.');
+      throw new BadRequestException(
+        'viewportJson must be a valid JSON object.',
+      );
     }
   }
 

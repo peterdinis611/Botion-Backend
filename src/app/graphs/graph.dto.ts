@@ -1,10 +1,5 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import {
-  IsString,
-  MinLength,
-  MaxLength,
-  IsOptional,
-} from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
 
 @InputType()
 export class CreateGraphInput {

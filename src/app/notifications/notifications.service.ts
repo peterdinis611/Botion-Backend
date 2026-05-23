@@ -9,7 +9,9 @@ import * as crypto from 'crypto';
 
 export type DbNotification = typeof notifications.$inferSelect;
 
-export function mapDbNotificationToModel(dbNotification: DbNotification): Notification {
+export function mapDbNotificationToModel(
+  dbNotification: DbNotification,
+): Notification {
   return {
     id: dbNotification.id,
     userId: dbNotification.userId,
@@ -38,7 +40,11 @@ export class NotificationsService {
     return rows.map(mapDbNotificationToModel);
   }
 
-  async create(userId: string, type: string, message: string): Promise<Notification> {
+  async create(
+    userId: string,
+    type: string,
+    message: string,
+  ): Promise<Notification> {
     const id = crypto.randomUUID();
     const newNotification = {
       id,

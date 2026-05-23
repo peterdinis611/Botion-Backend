@@ -162,9 +162,9 @@ describe('NotificationsService', () => {
       // Simulate the DB returning nothing (user mismatch filtered at DB level)
       allMock.mockReturnValueOnce([]);
 
-      await expect(
-        service.markAsRead('notif-1', 'user-999'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.markAsRead('notif-1', 'user-999')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

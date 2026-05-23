@@ -28,8 +28,7 @@ import type { Context } from 'graphql-ws';
               const params = context.connectionParams as
                 | Record<string, string>
                 | undefined;
-              const raw =
-                params?.authorization ?? params?.Authorization;
+              const raw = params?.authorization ?? params?.Authorization;
               if (!raw) {
                 throw new Error('Missing authorization in connectionParams.');
               }
@@ -47,7 +46,9 @@ import type { Context } from 'graphql-ws';
           connection,
         }: {
           req?: { headers?: { authorization?: string }; user?: JwtPayload };
-          connection?: { context?: { user?: JwtPayload; authorization?: string } };
+          connection?: {
+            context?: { user?: JwtPayload; authorization?: string };
+          };
         }) => {
           if (connection?.context?.user) {
             return {

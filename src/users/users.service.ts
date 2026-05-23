@@ -15,7 +15,10 @@ import {
   parseUserPreferencesJson,
   type UserPreferencesData,
 } from './user-preferences.model';
-import type { UpdateMyProfileInput, UpdateUserPreferencesInput } from './user-preferences.model';
+import type {
+  UpdateMyProfileInput,
+  UpdateUserPreferencesInput,
+} from './user-preferences.model';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -135,8 +138,7 @@ export class UsersService {
     const dbUser = this.getDbUser(userId);
     const current = parseUserPreferencesJson(dbUser.preferences);
     const next: UserPreferencesData = {
-      sidebarCollapsed:
-        input.sidebarCollapsed ?? current.sidebarCollapsed,
+      sidebarCollapsed: input.sidebarCollapsed ?? current.sidebarCollapsed,
     };
 
     this.db

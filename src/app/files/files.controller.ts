@@ -38,7 +38,9 @@ export class FilesController {
     @CurrentUser() currentUser: JwtPayload,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES }),
+        ],
       }),
     )
     file: Express.Multer.File,

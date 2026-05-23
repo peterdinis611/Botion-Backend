@@ -22,9 +22,7 @@ const CALENDAR_TTL_MS = 60_000;
 
 export type DbCalendarEvent = typeof calendarEvents.$inferSelect;
 
-export function mapDbCalendarEventToModel(
-  row: DbCalendarEvent,
-): CalendarEvent {
+export function mapDbCalendarEventToModel(row: DbCalendarEvent): CalendarEvent {
   return {
     id: row.id,
     title: row.title,
@@ -75,8 +73,7 @@ export class CalendarService {
     const result = rows
       .map(mapDbCalendarEventToModel)
       .sort(
-        (a, b) =>
-          new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
       );
 
     this.cacheService.set(cacheKey, result, CALENDAR_TTL_MS);
@@ -93,9 +90,7 @@ export class CalendarService {
     const row = this.db
       .select()
       .from(calendarEvents)
-      .where(
-        and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)),
-      )
+      .where(and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)))
       .all()[0];
 
     if (!row) {
@@ -162,9 +157,7 @@ export class CalendarService {
     this.db
       .update(calendarEvents)
       .set(cleanedData)
-      .where(
-        and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)),
-      )
+      .where(and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)))
       .run();
 
     this.invalidateUserCaches(userId, id);
@@ -188,9 +181,7 @@ export class CalendarService {
 
     this.db
       .delete(calendarEvents)
-      .where(
-        and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)),
-      )
+      .where(and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)))
       .run();
 
     this.invalidateUserCaches(userId, id);

@@ -121,21 +121,28 @@ export const noteRevisions = sqliteTable('note_revisions', {
     .notNull(),
 });
 
-export const noteShares = sqliteTable('note_shares', {
-  id: text('id').primaryKey(),
-  noteId: text('note_id')
-    .notNull()
-    .references(() => notes.id, { onDelete: 'cascade' }),
-  sharedWithUserId: text('shared_with_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  permission: text('permission').default('READ').notNull(),
-  createdAt: text('created_at')
-    .default(sql`(CURRENT_TIMESTAMP)`)
-    .notNull(),
-}, (t) => ({
-  unq: uniqueIndex('note_shares_note_id_shared_with_user_id_unique').on(t.noteId, t.sharedWithUserId),
-}));
+export const noteShares = sqliteTable(
+  'note_shares',
+  {
+    id: text('id').primaryKey(),
+    noteId: text('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    sharedWithUserId: text('shared_with_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    permission: text('permission').default('READ').notNull(),
+    createdAt: text('created_at')
+      .default(sql`(CURRENT_TIMESTAMP)`)
+      .notNull(),
+  },
+  (t) => ({
+    unq: uniqueIndex('note_shares_note_id_shared_with_user_id_unique').on(
+      t.noteId,
+      t.sharedWithUserId,
+    ),
+  }),
+);
 
 export const notifications = sqliteTable('notifications', {
   id: text('id').primaryKey(),

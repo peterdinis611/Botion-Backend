@@ -8,9 +8,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtPayload } from './current-user.decorator';
 
-function extractBearerToken(
-  authorization: string | undefined,
-): string | null {
+function extractBearerToken(authorization: string | undefined): string | null {
   if (!authorization) {
     return null;
   }

@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { notes } from '../../drizzle/schema';
@@ -69,7 +74,10 @@ export class NotesService {
     ].join(':');
   }
 
-  private async invalidateNoteCaches(noteId: string, ownerId: string): Promise<void> {
+  private async invalidateNoteCaches(
+    noteId: string,
+    ownerId: string,
+  ): Promise<void> {
     // 1. Invalidate owner's caches
     this.cacheService.delete(`note:${noteId}:user:${ownerId}`);
     this.cacheService.clearPattern(`user:${ownerId}:notes:*`);
@@ -229,11 +237,7 @@ export class NotesService {
       return cached;
     }
 
-    const results = this.db
-      .select()
-      .from(notes)
-      .where(eq(notes.id, id))
-      .all();
+    const results = this.db.select().from(notes).where(eq(notes.id, id)).all();
 
     const note = results[0];
     if (!note) {
@@ -320,7 +324,9 @@ export class NotesService {
         )
         .all();
       if (shareResults.length === 0) {
-        throw new ForbiddenException(`You do not have write access to this note.`);
+        throw new ForbiddenException(
+          `You do not have write access to this note.`,
+        );
       }
     }
 
@@ -339,11 +345,7 @@ export class NotesService {
     // Force refresh the update timestamp
     cleanedData.updatedAt = new Date().toISOString();
 
-    this.db
-      .update(notes)
-      .set(cleanedData)
-      .where(eq(notes.id, id))
-      .run();
+    this.db.update(notes).set(cleanedData).where(eq(notes.id, id)).run();
 
     if (tagIds !== undefined) {
       await this.tagsService.setNoteTags(id, tagIds, currentNote.userId);
@@ -362,7 +364,10 @@ export class NotesService {
   }
 
   async restoreRevision(revisionId: string, userId: string): Promise<Note> {
-    const revision = await this.noteRevisionsService.findOne(revisionId, userId);
+    const revision = await this.noteRevisionsService.findOne(
+      revisionId,
+      userId,
+    );
     const currentNote = await this.findOne(revision.noteId, userId);
 
     // Verify write permissions (either owner or WRITE share permission)
@@ -380,7 +385,9 @@ export class NotesService {
         )
         .all();
       if (shareResults.length === 0) {
-        throw new ForbiddenException(`You do not have write access to this note.`);
+        throw new ForbiddenException(
+          `You do not have write access to this note.`,
+        );
       }
     }
 
@@ -429,10 +436,7 @@ export class NotesService {
       note,
     );
 
-    this.db
-      .delete(notes)
-      .where(eq(notes.id, id))
-      .run();
+    this.db.delete(notes).where(eq(notes.id, id)).run();
 
     // Invalidate caches
     this.cacheService.delete(`note:${id}:user:${userId}`);
@@ -461,7 +465,9 @@ export class NotesService {
     // 2. Find recipient user by email
     const recipient = await this.usersService.findByEmail(sharedWithEmail);
     if (!recipient) {
-      throw new NotFoundException(`User with email "${sharedWithEmail}" not found.`);
+      throw new NotFoundException(
+        `User with email "${sharedWithEmail}" not found.`,
+      );
     }
 
     if (recipient.id === userId) {
@@ -504,7 +510,9 @@ export class NotesService {
     }
 
     // 4. Create notification for recipient
-    const ownerName = await this.usersService.findOne(userId).then((u) => u.name);
+    const ownerName = await this.usersService
+      .findOne(userId)
+      .then((u) => u.name);
     await this.notificationsService.create(
       recipient.id,
       'NOTE_SHARED',
@@ -532,7 +540,11 @@ export class NotesService {
     return results[0];
   }
 
-  async unshareNote(noteId: string, sharedWithUserId: string, userId: string): Promise<boolean> {
+  async unshareNote(
+    noteId: string,
+    sharedWithUserId: string,
+    userId: string,
+  ): Promise<boolean> {
     // Ensure note exists
     const note = await this.findOne(noteId, userId);
 
@@ -541,7 +553,9 @@ export class NotesService {
     const isRecipient = sharedWithUserId === userId;
 
     if (!isOwner && !isRecipient) {
-      throw new ForbiddenException('You do not have permission to modify sharing for this note.');
+      throw new ForbiddenException(
+        'You do not have permission to modify sharing for this note.',
+      );
     }
 
     // Perform delete

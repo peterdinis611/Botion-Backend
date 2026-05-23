@@ -9,7 +9,12 @@ import {
 } from '@nestjs/graphql';
 import { NotesService } from './notes.service';
 import { Note } from './note.model';
-import { CreateNoteInput, UpdateNoteInput, ShareNoteInput, UnshareNoteInput } from './note.dto';
+import {
+  CreateNoteInput,
+  UpdateNoteInput,
+  ShareNoteInput,
+  UnshareNoteInput,
+} from './note.dto';
 import { NoteShare } from './note-share.model';
 import { User } from '../../users/user.model';
 import { UsersService } from '../../users/users.service';
