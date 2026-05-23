@@ -16,6 +16,9 @@ export const users = sqliteTable('users', {
   bio: text('bio'),
   age: integer('age'),
   passwordHash: text('password_hash').default('').notNull(),
+  preferences: text('preferences')
+    .default('{"sidebarCollapsed":false}')
+    .notNull(),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
@@ -143,6 +146,24 @@ export const notifications = sqliteTable('notifications', {
   message: text('message').notNull(),
   isRead: integer('is_read', { mode: 'boolean' }).default(false).notNull(),
   createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+export const graphs = sqliteTable('graphs', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  nodesJson: text('nodes_json').default('[]').notNull(),
+  edgesJson: text('edges_json').default('[]').notNull(),
+  viewportJson: text('viewport_json'),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: text('updated_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
 });

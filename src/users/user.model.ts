@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID, registerEnumType, Int } from '@nestjs/graphql';
+import { UserPreferences } from './user-preferences.model';
 
 export enum UserRole {
   USER = 'USER',
@@ -36,6 +37,9 @@ export class User {
 
   @Field(() => Int, { nullable: true })
   age?: number;
+
+  @Field(() => UserPreferences)
+  preferences: UserPreferences;
 
   @Field()
   createdAt: string;

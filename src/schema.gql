@@ -2,6 +2,10 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type UserPreferences {
+  sidebarCollapsed: Boolean!
+}
+
 type User {
   id: ID!
   name: String!
@@ -10,6 +14,7 @@ type User {
   status: UserStatus!
   bio: String
   age: Int
+  preferences: UserPreferences!
   createdAt: String!
 }
 
@@ -123,6 +128,19 @@ type CalendarEvent {
   updatedAt: String!
 }
 
+type Graph {
+  id: ID!
+  title: String!
+  description: String
+  userId: String!
+  user: User
+  nodesJson: String!
+  edgesJson: String!
+  viewportJson: String
+  createdAt: String!
+  updatedAt: String!
+}
+
 type AppEvent {
   action: AppEventAction!
   userId: String!
@@ -158,6 +176,8 @@ type Query {
   folder(id: ID!): Folder!
   calendarEvents(from: String, to: String): [CalendarEvent!]!
   calendarEvent(id: ID!): CalendarEvent!
+  graphs: [Graph!]!
+  graph(id: ID!): Graph!
 }
 
 type Mutation {
@@ -165,6 +185,8 @@ type Mutation {
   login(input: LoginInput!): AuthPayload!
   createUser(input: CreateUserInput!): User!
   updateUser(input: UpdateUserInput!): User!
+  updateMyProfile(input: UpdateMyProfileInput!): User!
+  updateMyPreferences(input: UpdateUserPreferencesInput!): UserPreferences!
   removeUser(id: String!): Boolean!
   createNote(input: CreateNoteInput!): Note!
   updateNote(input: UpdateNoteInput!): Note!
@@ -189,6 +211,9 @@ type Mutation {
   createCalendarEvent(input: CreateCalendarEventInput!): CalendarEvent!
   updateCalendarEvent(input: UpdateCalendarEventInput!): CalendarEvent!
   removeCalendarEvent(id: ID!): Boolean!
+  createGraph(input: CreateGraphInput!): Graph!
+  updateGraph(input: UpdateGraphInput!): Graph!
+  removeGraph(id: ID!): Boolean!
 }
 
 input RegisterInput {
@@ -224,6 +249,16 @@ input UpdateUserInput {
   status: UserStatus
   bio: String
   age: Int
+}
+
+input UpdateMyProfileInput {
+  name: String
+  bio: String
+  age: Float
+}
+
+input UpdateUserPreferencesInput {
+  sidebarCollapsed: Boolean
 }
 
 input CreateNoteInput {
@@ -316,6 +351,23 @@ input UpdateCalendarEventInput {
   allDay: Boolean
   color: String
   location: String
+}
+
+input CreateGraphInput {
+  title: String!
+  description: String
+  nodesJson: String
+  edgesJson: String
+  viewportJson: String
+}
+
+input UpdateGraphInput {
+  id: ID!
+  title: String
+  description: String
+  nodesJson: String
+  edgesJson: String
+  viewportJson: String
 }
 
 type Subscription {

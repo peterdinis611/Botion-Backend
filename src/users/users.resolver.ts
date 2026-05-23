@@ -2,6 +2,11 @@ import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import { User } from './user.model';
 import { CreateUserInput, UpdateUserInput } from './user.dto';
+import {
+  UpdateMyProfileInput,
+  UpdateUserPreferencesInput,
+  UserPreferences,
+} from './user-preferences.model';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -37,6 +42,28 @@ export class UsersResolver {
   @UseGuards(GqlAuthGuard)
   async updateUser(@Args('input') input: UpdateUserInput) {
     return this.usersService.update(input);
+  }
+
+  @Mutation(() => User)
+  @UseGuards(GqlAuthGuard)
+  async updateMyProfile(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: UpdateMyProfileInput,
+  ) {
+    return this.usersService.updateMyProfile(currentUser.sub, input);
+  }
+
+  @Mutation(() => UserPreferences)
+  @UseGuards(GqlAuthGuard)
+  async updateMyPreferences(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: UpdateUserPreferencesInput,
+  ) {
+    const user = await this.usersService.updateMyPreferences(
+      currentUser.sub,
+      input,
+    );
+    return user.preferences;
   }
 
   @Mutation(() => Boolean)

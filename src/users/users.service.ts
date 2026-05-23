@@ -3,6 +3,7 @@ import {
   Inject,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
@@ -10,6 +11,11 @@ import { users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { CreateUserInput, UpdateUserInput } from './user.dto';
 import { User, UserRole, UserStatus } from './user.model';
+import {
+  parseUserPreferencesJson,
+  type UserPreferencesData,
+} from './user-preferences.model';
+import type { UpdateMyProfileInput, UpdateUserPreferencesInput } from './user-preferences.model';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -24,6 +30,7 @@ export function mapDbUserToModel(dbUser: DbUser): User {
     status: dbUser.status as UserStatus,
     bio: dbUser.bio ?? undefined,
     age: dbUser.age ?? undefined,
+    preferences: parseUserPreferencesJson(dbUser.preferences),
     createdAt: dbUser.createdAt,
   };
 }
@@ -32,21 +39,27 @@ export function mapDbUserToModel(dbUser: DbUser): User {
 export class UsersService {
   constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
 
+  private getDbUser(id: string): DbUser {
+    const results = this.db.select().from(users).where(eq(users.id, id)).all();
+    const user = results[0];
+    if (!user) {
+      throw new NotFoundException(`User with ID "${id}" not found.`);
+    }
+    return user;
+  }
+
   async findAll(): Promise<User[]> {
     const rows = this.db.select().from(users).all();
     return rows.map(mapDbUserToModel);
   }
 
   async findOne(id: string, throwOnNotFound = true): Promise<User> {
-    const results = this.db.select().from(users).where(eq(users.id, id)).all();
-    const user = results[0];
-    if (!user) {
-      if (throwOnNotFound) {
-        throw new NotFoundException(`User with ID "${id}" not found.`);
-      }
+    try {
+      return mapDbUserToModel(this.getDbUser(id));
+    } catch (e) {
+      if (throwOnNotFound) throw e;
       throw new NotFoundException(`User with ID "${id}" not found.`);
     }
-    return mapDbUserToModel(user);
   }
 
   async findByEmail(email: string): Promise<DbUser | null> {
@@ -59,7 +72,6 @@ export class UsersService {
   }
 
   async create(input: CreateUserInput): Promise<User> {
-    // Check if email is already taken
     const existingUser = await this.findByEmail(input.email);
     if (existingUser) {
       throw new ConflictException(
@@ -67,9 +79,7 @@ export class UsersService {
       );
     }
 
-    // Encrypt raw password
     const passwordHash = await bcrypt.hash(input.password, 10);
-
     const id = crypto.randomUUID();
     const newUser = {
       id,
@@ -80,6 +90,7 @@ export class UsersService {
       bio: input.bio ?? null,
       age: input.age ?? null,
       passwordHash,
+      preferences: JSON.stringify(parseUserPreferencesJson(null)),
     };
     this.db.insert(users).values(newUser).run();
     return this.findOne(id);
@@ -87,11 +98,8 @@ export class UsersService {
 
   async update(input: UpdateUserInput): Promise<User> {
     const { id, ...updateData } = input;
-
-    // Verify user exists first
     await this.findOne(id, true);
 
-    // Verify email uniqueness if email is being updated
     if (updateData.email) {
       const existingUser = await this.findByEmail(updateData.email);
       if (existingUser && existingUser.id !== id) {
@@ -101,7 +109,6 @@ export class UsersService {
       }
     }
 
-    // Filter out undefined values to prevent overwriting with null
     const cleanedUpdateData = Object.fromEntries(
       Object.entries(updateData).filter(([_, v]) => v !== undefined),
     );
@@ -109,10 +116,47 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  async updateMyProfile(
+    userId: string,
+    input: UpdateMyProfileInput,
+  ): Promise<User> {
+    return this.update({
+      id: userId,
+      name: input.name,
+      bio: input.bio,
+      age: input.age,
+    });
+  }
+
+  async updateMyPreferences(
+    userId: string,
+    input: UpdateUserPreferencesInput,
+  ): Promise<User> {
+    const dbUser = this.getDbUser(userId);
+    const current = parseUserPreferencesJson(dbUser.preferences);
+    const next: UserPreferencesData = {
+      sidebarCollapsed:
+        input.sidebarCollapsed ?? current.sidebarCollapsed,
+    };
+
+    this.db
+      .update(users)
+      .set({ preferences: JSON.stringify(next) })
+      .where(eq(users.id, userId))
+      .run();
+
+    return this.findOne(userId);
+  }
+
   async remove(id: string): Promise<boolean> {
-    // Verify user exists
     await this.findOne(id, true);
     this.db.delete(users).where(eq(users.id, id)).run();
     return true;
+  }
+
+  assertSelf(userId: string, targetId: string) {
+    if (userId !== targetId) {
+      throw new ForbiddenException('You can only update your own account.');
+    }
   }
 }

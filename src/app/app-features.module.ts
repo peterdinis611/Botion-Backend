@@ -6,6 +6,7 @@ import { FoldersModule } from './folders/folders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { GraphsModule } from './graphs/graphs.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
     NotificationsModule,
     FilesModule,
     CalendarModule,
+    GraphsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
