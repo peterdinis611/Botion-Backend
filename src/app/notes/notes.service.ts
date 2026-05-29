@@ -554,6 +554,12 @@ export class NotesService {
       recipient.id,
       'NOTE_SHARED',
       `${ownerName} shared the note "${note.title}" with you.`,
+      {
+        noteId,
+        noteTitle: note.title,
+        ownerUserId: userId,
+        ownerName,
+      },
     );
 
     const sharedNote = await this.findOne(noteId, recipient.id);

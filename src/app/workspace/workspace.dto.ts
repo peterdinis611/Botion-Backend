@@ -23,6 +23,22 @@ export class InviteWorkspaceMemberResult {
   message: string;
 }
 
+@InputType()
+export class AcceptWorkspaceInviteInput {
+  @Field()
+  @IsString()
+  inviteId: string;
+}
+
+@ObjectType()
+export class AcceptWorkspaceInviteResult {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+}
+
 @ObjectType()
 export class PageShareLink {
   @Field()

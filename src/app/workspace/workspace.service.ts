@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { and, eq, inArray } from 'drizzle-orm';
 import * as crypto from 'crypto';
@@ -61,7 +66,10 @@ export class WorkspaceService {
       )
       .all()[0];
 
+    let inviteId: string;
+
     if (existing) {
+      inviteId = existing.id;
       this.db
         .update(workspaceInvites)
         .set({
@@ -72,10 +80,11 @@ export class WorkspaceService {
         .where(eq(workspaceInvites.id, existing.id))
         .run();
     } else {
+      inviteId = crypto.randomUUID();
       this.db
         .insert(workspaceInvites)
         .values({
-          id: crypto.randomUUID(),
+          id: inviteId,
           ownerUserId: userId,
           email,
           invitedUserId: invitedUser?.id ?? null,
@@ -90,17 +99,86 @@ export class WorkspaceService {
       ? `Invitation sent to ${email}: ${custom}`
       : `Invitation sent to ${email}. They will see it in your workspace header.`;
 
-    await this.notificationsService.create(userId, 'WORKSPACE_INVITE', message);
+    await this.notificationsService.create(
+      userId,
+      'WORKSPACE_INVITE',
+      message,
+      { role: 'sent', inviteId, email },
+    );
 
     if (invitedUser) {
       await this.notificationsService.create(
         invitedUser.id,
         'WORKSPACE_INVITE',
         `${owner.name} invited you to collaborate on Botion.`,
+        {
+          role: 'received',
+          inviteId,
+          ownerUserId: userId,
+          ownerName: owner.name,
+        },
       );
     }
 
     return { success: true, message };
+  }
+
+  async acceptWorkspaceInvite(
+    userId: string,
+    inviteId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const user = await this.usersService.findOne(userId);
+    const rows = this.db
+      .select()
+      .from(workspaceInvites)
+      .where(eq(workspaceInvites.id, inviteId))
+      .all();
+    const invite = rows[0];
+    if (!invite) {
+      throw new NotFoundException('Invitation not found.');
+    }
+
+    const isRecipient =
+      invite.invitedUserId === userId ||
+      invite.email.toLowerCase() === user.email.toLowerCase();
+
+    if (!isRecipient) {
+      throw new ForbiddenException('This invitation is not for your account.');
+    }
+
+    if (invite.status === 'ACCEPTED') {
+      return { success: true, message: 'Invitation already accepted.' };
+    }
+
+    this.db
+      .update(workspaceInvites)
+      .set({
+        status: 'ACCEPTED',
+        invitedUserId: userId,
+      })
+      .where(eq(workspaceInvites.id, inviteId))
+      .run();
+
+    const owner = await this.usersService.findOne(invite.ownerUserId);
+
+    await this.notificationsService.create(
+      invite.ownerUserId,
+      'WORKSPACE_INVITE',
+      `${user.name} accepted your workspace invitation.`,
+      { role: 'accepted', inviteId, memberUserId: userId },
+    );
+
+    await this.notificationsService.create(
+      userId,
+      'WORKSPACE_INVITE',
+      `You joined ${owner.name}'s workspace on Botion.`,
+      { role: 'accepted', inviteId, ownerUserId: invite.ownerUserId },
+    );
+
+    return {
+      success: true,
+      message: `You are now connected with ${owner.name}'s workspace.`,
+    };
   }
 
   async listCollaborators(
@@ -124,6 +202,21 @@ export class WorkspaceService {
       .all();
 
     for (const invite of invites) {
+      if (invite.status === 'ACCEPTED' && invite.invitedUserId) {
+        try {
+          const u = await this.usersService.findOne(invite.invitedUserId);
+          map.set(u.id, {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            status: CollaboratorStatus.MEMBER,
+          });
+        } catch {
+          // skip
+        }
+        continue;
+      }
+
       if (invite.status !== 'PENDING') continue;
       const key = invite.invitedUserId ?? `pending:${invite.email}`;
       if (map.has(key)) continue;

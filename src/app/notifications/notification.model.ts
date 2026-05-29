@@ -14,6 +14,9 @@ export class Notification {
   @Field()
   message: string;
 
+  @Field(() => String, { nullable: true })
+  metadata?: string | null;
+
   @Field()
   isRead: boolean;
 

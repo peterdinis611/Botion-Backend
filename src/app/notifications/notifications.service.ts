@@ -5,6 +5,10 @@ import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { notifications } from '../../drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { Notification } from './notification.model';
+import {
+  NotificationMetadata,
+  serializeNotificationMetadata,
+} from './notification-metadata';
 import * as crypto from 'crypto';
 
 export type DbNotification = typeof notifications.$inferSelect;
@@ -17,6 +21,7 @@ export function mapDbNotificationToModel(
     userId: dbNotification.userId,
     type: dbNotification.type,
     message: dbNotification.message,
+    metadata: dbNotification.metadata ?? null,
     isRead: dbNotification.isRead,
     createdAt: dbNotification.createdAt,
   };
@@ -44,6 +49,7 @@ export class NotificationsService {
     userId: string,
     type: string,
     message: string,
+    metadata?: NotificationMetadata | null,
   ): Promise<Notification> {
     const id = crypto.randomUUID();
     const newNotification = {
@@ -51,6 +57,7 @@ export class NotificationsService {
       userId,
       type,
       message,
+      metadata: serializeNotificationMetadata(metadata),
       isRead: false,
     };
 

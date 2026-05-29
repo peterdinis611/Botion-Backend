@@ -47,6 +47,13 @@ function ensureCriticalSchema(sqlite: Database.Database) {
     }
     console.log('Applied workspace invites schema patch (0012).');
   }
+
+  if (!columnExists(sqlite, 'notifications', 'metadata')) {
+    const sqlPath = join(process.cwd(), 'drizzle', '0013_notification_metadata.sql');
+    const sql = readFileSync(sqlPath, 'utf8').trim();
+    if (sql) sqlite.exec(sql);
+    console.log('Applied notification metadata schema patch (0013).');
+  }
 }
 
 function tableExists(sqlite: Database.Database, table: string) {

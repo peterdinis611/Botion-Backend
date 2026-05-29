@@ -190,6 +190,7 @@ export const notifications = sqliteTable('notifications', {
     .references(() => users.id, { onDelete: 'cascade' }),
   type: text('type').notNull(),
   message: text('message').notNull(),
+  metadata: text('metadata'),
   isRead: integer('is_read', { mode: 'boolean' }).default(false).notNull(),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)

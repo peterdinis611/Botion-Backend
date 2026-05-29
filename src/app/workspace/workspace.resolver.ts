@@ -6,6 +6,8 @@ import type { JwtPayload } from '../../auth/current-user.decorator';
 import { NoteShare } from '../notes/note-share.model';
 import { WorkspaceCollaborator } from './workspace-collaborator.model';
 import {
+  AcceptWorkspaceInviteInput,
+  AcceptWorkspaceInviteResult,
   InviteWorkspaceMemberInput,
   InviteWorkspaceMemberResult,
   PageShareLink,
@@ -24,6 +26,17 @@ export class WorkspaceResolver {
     @Args('input') input: InviteWorkspaceMemberInput,
   ) {
     return this.workspaceService.inviteMember(currentUser.sub, input);
+  }
+
+  @Mutation(() => AcceptWorkspaceInviteResult)
+  async acceptWorkspaceInvite(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: AcceptWorkspaceInviteInput,
+  ) {
+    return this.workspaceService.acceptWorkspaceInvite(
+      currentUser.sub,
+      input.inviteId,
+    );
   }
 
   @Query(() => PageShareLink, { name: 'pageShareLink' })

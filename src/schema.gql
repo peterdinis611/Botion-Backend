@@ -119,6 +119,7 @@ type Notification {
   userId: String!
   type: String!
   message: String!
+  metadata: String
   isRead: Boolean!
   createdAt: String!
 }
@@ -182,6 +183,11 @@ enum CollaboratorStatus {
 }
 
 type InviteWorkspaceMemberResult {
+  success: Boolean!
+  message: String!
+}
+
+type AcceptWorkspaceInviteResult {
   success: Boolean!
   message: String!
 }
@@ -282,6 +288,7 @@ type Mutation {
   reorderSnaps(ids: [ID!]!): [Snap!]!
   removeSnap(id: ID!): Boolean!
   inviteWorkspaceMember(input: InviteWorkspaceMemberInput!): InviteWorkspaceMemberResult!
+  acceptWorkspaceInvite(input: AcceptWorkspaceInviteInput!): AcceptWorkspaceInviteResult!
   sharePageWithCollaborator(input: SharePageInput!): NoteShare!
 }
 
@@ -468,6 +475,10 @@ input UpdateSnapInput {
 input InviteWorkspaceMemberInput {
   email: String!
   message: String
+}
+
+input AcceptWorkspaceInviteInput {
+  inviteId: String!
 }
 
 input SharePageInput {

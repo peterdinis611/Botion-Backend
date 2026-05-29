@@ -5,14 +5,15 @@ import { AuthService } from './auth.service';
 import { AuthResolver } from './auth.resolver';
 import { GqlAuthGuard } from './gql-auth.guard';
 import { HttpAuthGuard } from './http-auth.guard';
+import { JWT_EXPIRES_IN_SECONDS, JWT_SECRET } from './jwt.config';
 
 @Module({
   imports: [
     UsersModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET ?? 'SECRET_KEY_JWT_CHANGE_ME',
-      signOptions: { expiresIn: '24h' },
+      secret: JWT_SECRET,
+      signOptions: { expiresIn: JWT_EXPIRES_IN_SECONDS },
     }),
   ],
   providers: [AuthService, AuthResolver, GqlAuthGuard, HttpAuthGuard],
