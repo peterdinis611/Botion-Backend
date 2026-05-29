@@ -44,6 +44,21 @@ export class EventsPubSubService {
     });
   }
 
+  async broadcastNoteEvent(
+    recipientUserIds: string[],
+    action: AppEventAction,
+    note: Note,
+    actorUserId?: string,
+  ): Promise<void> {
+    const unique = [...new Set(recipientUserIds.filter(Boolean))];
+    await Promise.all(
+      unique.map(async (recipientId) => {
+        if (actorUserId && recipientId === actorUserId) return;
+        await this.publishNoteEvent(recipientId, action, note);
+      }),
+    );
+  }
+
   async publishCalendarEvent(
     userId: string,
     action: AppEventAction,

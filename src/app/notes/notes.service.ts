@@ -363,12 +363,26 @@ export class NotesService {
     await this.invalidateNoteCaches(id, currentNote.userId);
 
     const note = await this.findOne(id, userId);
-    await this.eventsPubSub.publishNoteEvent(
-      currentNote.userId,
+    const recipients = await this.getNoteCollaboratorUserIds(id, currentNote.userId);
+    await this.eventsPubSub.broadcastNoteEvent(
+      recipients,
       AppEventAction.NOTE_UPDATED,
       note,
+      userId,
     );
     return note;
+  }
+
+  private async getNoteCollaboratorUserIds(
+    noteId: string,
+    ownerId: string,
+  ): Promise<string[]> {
+    const shares = this.db
+      .select({ userId: noteShares.sharedWithUserId })
+      .from(noteShares)
+      .where(eq(noteShares.noteId, noteId))
+      .all();
+    return [ownerId, ...shares.map((s) => s.userId)];
   }
 
   async restoreRevision(revisionId: string, userId: string): Promise<Note> {
@@ -543,10 +557,12 @@ export class NotesService {
     );
 
     const sharedNote = await this.findOne(noteId, recipient.id);
-    await this.eventsPubSub.publishNoteEvent(
-      recipient.id,
+    const recipients = await this.getNoteCollaboratorUserIds(noteId, note.userId);
+    await this.eventsPubSub.broadcastNoteEvent(
+      recipients,
       AppEventAction.NOTE_SHARED,
       sharedNote,
+      userId,
     );
 
     // 5. Invalidate recipient note list caches and note detail cache

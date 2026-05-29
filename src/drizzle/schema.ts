@@ -158,6 +158,31 @@ export const noteShares = sqliteTable(
   }),
 );
 
+export const workspaceInvites = sqliteTable(
+  'workspace_invites',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    invitedUserId: text('invited_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    status: text('status').default('PENDING').notNull(),
+    message: text('message'),
+    createdAt: text('created_at')
+      .default(sql`(CURRENT_TIMESTAMP)`)
+      .notNull(),
+  },
+  (t) => ({
+    ownerEmailUniq: uniqueIndex('workspace_invites_owner_email_unique').on(
+      t.ownerUserId,
+      t.email,
+    ),
+  }),
+);
+
 export const notifications = sqliteTable('notifications', {
   id: text('id').primaryKey(),
   userId: text('user_id')

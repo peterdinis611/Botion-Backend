@@ -37,6 +37,25 @@ function ensureCriticalSchema(sqlite: Database.Database) {
     }
     console.log('Applied workspace tags schema patch (0011).');
   }
+
+  if (!tableExists(sqlite, 'workspace_invites')) {
+    const sqlPath = join(process.cwd(), 'drizzle', '0012_workspace_invites.sql');
+    const sql = readFileSync(sqlPath, 'utf8');
+    for (const statement of sql.split('--> statement-breakpoint')) {
+      const trimmed = statement.trim();
+      if (trimmed) sqlite.exec(trimmed);
+    }
+    console.log('Applied workspace invites schema patch (0012).');
+  }
+}
+
+function tableExists(sqlite: Database.Database, table: string) {
+  const row = sqlite
+    .prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
+    )
+    .get(table);
+  return Boolean(row);
 }
 
 export const drizzleProvider: Provider = {

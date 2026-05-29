@@ -31,3 +31,15 @@ export class PageShareLink {
   @Field()
   title: string;
 }
+
+@InputType()
+export class SharePageInput {
+  @Field()
+  @IsEmail()
+  email: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  noteId?: string;
+}

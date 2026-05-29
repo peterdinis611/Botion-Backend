@@ -1,12 +1,15 @@
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../../auth/gql-auth.guard';
 import { CurrentUser } from '../../auth/current-user.decorator';
 import type { JwtPayload } from '../../auth/current-user.decorator';
+import { NoteShare } from '../notes/note-share.model';
+import { WorkspaceCollaborator } from './workspace-collaborator.model';
 import {
   InviteWorkspaceMemberInput,
   InviteWorkspaceMemberResult,
   PageShareLink,
+  SharePageInput,
 } from './workspace.dto';
 import { WorkspaceService } from './workspace.service';
 
@@ -37,5 +40,28 @@ export class WorkspaceResolver {
     @Args('path') path: string,
   ) {
     return this.workspaceService.resolveSharePath(currentUser.sub, path);
+  }
+
+  @Query(() => [WorkspaceCollaborator], { name: 'workspaceCollaborators' })
+  async workspaceCollaborators(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('noteId', { type: () => ID, nullable: true }) noteId?: string,
+  ) {
+    return this.workspaceService.listCollaborators(currentUser.sub, noteId);
+  }
+
+  @Mutation(() => NoteShare)
+  async sharePageWithCollaborator(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: SharePageInput,
+  ) {
+    if (!input.noteId) {
+      throw new BadRequestException('noteId is required to share a page.');
+    }
+    return this.workspaceService.sharePageWithCollaborator(
+      currentUser.sub,
+      input.email,
+      input.noteId,
+    );
   }
 }

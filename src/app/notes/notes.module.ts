@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { NotesResolver } from './notes.resolver';
+import { NoteShareResolver } from './note-share.resolver';
 import { UsersModule } from '../../users/users.module';
 import { AuthModule } from '../../auth/auth.module';
 import { NotebooksModule } from '../notebooks/notebooks.module';
@@ -16,7 +17,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     TagsModule,
     NotificationsModule,
   ],
-  providers: [NotesService, NotesResolver, NoteRevisionsService],
+  providers: [NotesService, NotesResolver, NoteShareResolver, NoteRevisionsService],
   exports: [NotesService, NoteRevisionsService],
 })
 export class NotesModule {}
