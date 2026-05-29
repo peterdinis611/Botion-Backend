@@ -26,8 +26,25 @@ export class TagsResolver {
   ) {}
 
   @Query(() => [Tag], { name: 'tags' })
-  async getTags(@CurrentUser() currentUser: JwtPayload) {
-    return this.tagsService.findAll(currentUser.sub);
+  async getTags(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('notebookId', { type: () => ID, nullable: true })
+    notebookId?: string,
+    @Args('includeGlobal', { type: () => Boolean, nullable: true })
+    includeGlobal?: boolean,
+  ) {
+    return this.tagsService.findAll(currentUser.sub, {
+      notebookId,
+      includeGlobal: includeGlobal ?? true,
+    });
+  }
+
+  @Query(() => [Tag], { name: 'workspaceTags' })
+  async getWorkspaceTags(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('notebookId', { type: () => ID }) notebookId: string,
+  ) {
+    return this.tagsService.findWorkspaceTags(currentUser.sub, notebookId);
   }
 
   @Mutation(() => Tag)
@@ -58,4 +75,5 @@ export class TagsResolver {
   async user(@Parent() tag: Tag) {
     return this.usersService.findOne(tag.userId);
   }
+
 }

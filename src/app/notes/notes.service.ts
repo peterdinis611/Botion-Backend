@@ -56,6 +56,7 @@ export class NotesService {
     userId: string,
     options: {
       includeArchived: boolean;
+      onlyArchived?: boolean;
       notebookId?: string;
       folderId?: string;
       isPinned?: boolean;
@@ -66,6 +67,7 @@ export class NotesService {
     return [
       `user:${userId}:notes`,
       `archived:${options.includeArchived}`,
+      `onlyArchived:${options.onlyArchived ?? false}`,
       `nb:${options.notebookId ?? ''}`,
       `folder:${options.folderId ?? ''}`,
       `pin:${options.isPinned ?? ''}`,
@@ -102,6 +104,7 @@ export class NotesService {
       | boolean
       | {
           includeArchived?: boolean;
+          onlyArchived?: boolean;
           notebookId?: string;
           folderId?: string;
           isPinned?: boolean;
@@ -110,6 +113,7 @@ export class NotesService {
         },
   ): Promise<Note[]> {
     let includeArchived = false;
+    let onlyArchived = false;
     let notebookId: string | undefined;
     let folderId: string | undefined;
     let isPinned: boolean | undefined;
@@ -120,6 +124,7 @@ export class NotesService {
       includeArchived = optionsOrIncludeArchived;
     } else if (optionsOrIncludeArchived) {
       includeArchived = optionsOrIncludeArchived.includeArchived ?? false;
+      onlyArchived = optionsOrIncludeArchived.onlyArchived ?? false;
       notebookId = optionsOrIncludeArchived.notebookId;
       folderId = optionsOrIncludeArchived.folderId;
       isPinned = optionsOrIncludeArchived.isPinned;
@@ -129,6 +134,7 @@ export class NotesService {
 
     const cacheKey = this.buildListKey(userId, {
       includeArchived,
+      onlyArchived,
       notebookId,
       folderId,
       isPinned,
@@ -163,7 +169,9 @@ export class NotesService {
       conditions.push(accessCondition);
     }
 
-    if (!includeArchived) {
+    if (onlyArchived) {
+      conditions.push(eq(notes.isArchived, true));
+    } else if (!includeArchived) {
       conditions.push(eq(notes.isArchived, false));
     }
 
@@ -448,6 +456,21 @@ export class NotesService {
     }
 
     return true;
+  }
+
+  async emptyTrash(userId: string): Promise<number> {
+    const archived = await this.findAll(userId, { onlyArchived: true });
+    let deleted = 0;
+
+    for (const note of archived) {
+      if (note.userId !== userId) {
+        continue;
+      }
+      await this.remove(note.id, userId);
+      deleted += 1;
+    }
+
+    return deleted;
   }
 
   async shareNote(

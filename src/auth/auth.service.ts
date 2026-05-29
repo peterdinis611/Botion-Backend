@@ -17,8 +17,12 @@ export class AuthService {
   ) {}
 
   async register(input: RegisterInput): Promise<AuthPayload> {
-    // Save user; usersService.create handles email uniqueness and password hashing
-    const user = await this.usersService.create(input);
+    const normalized = {
+      ...input,
+      email: input.email.trim().toLowerCase(),
+      name: input.name.trim(),
+    };
+    const user = await this.usersService.create(normalized);
 
     // Generate JWT
     const token = await this.jwtService.signAsync({
@@ -31,12 +35,18 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<AuthPayload> {
-    const user = await this.usersService.findByEmail(input.email);
+    const email = input.email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    // Compare bcrypt hashes
+    if (!user.passwordHash || user.passwordHash.length < 20) {
+      throw new UnauthorizedException(
+        'This account has no password set. Please register again with the same email or use another account.',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(
       input.password,
       user.passwordHash,

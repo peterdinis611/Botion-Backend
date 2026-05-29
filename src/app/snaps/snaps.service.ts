@@ -10,7 +10,10 @@ import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { snaps } from '../../drizzle/schema';
 import { FilesService } from '../files/files.service';
+import { NotebooksService } from '../notebooks/notebooks.service';
+import { NotesService } from '../notes/notes.service';
 import { CacheService } from '../../cache/cache.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   CreateSnapInput,
   SnapListScope,
@@ -43,7 +46,10 @@ export class SnapsService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly filesService: FilesService,
+    private readonly notebooksService: NotebooksService,
+    private readonly notesService: NotesService,
     private readonly cacheService: CacheService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private listCacheKey(
@@ -59,12 +65,54 @@ export class SnapsService {
     this.cacheService.clearPattern(`user:${userId}:snaps:*`);
   }
 
+  private resolveScope(
+    scope: SnapListScope,
+    notebookId?: string,
+    noteId?: string,
+  ): SnapListScope {
+    if (scope === SnapListScope.NOTE && !noteId) {
+      throw new BadRequestException(
+        'noteId is required when scope is NOTE.',
+      );
+    }
+    if (scope === SnapListScope.NOTEBOOK && !notebookId) {
+      return SnapListScope.ALL;
+    }
+    return scope;
+  }
+
   private async assertImageFile(userId: string, fileId: string) {
     const record = await this.filesService.findRecord(userId, fileId);
     if (!record.mimeType.startsWith('image/')) {
       throw new BadRequestException('Snaps only support image files.');
     }
     return record;
+  }
+
+  private async validateScopeRefs(
+    userId: string,
+    refs: { notebookId?: string | null; noteId?: string | null },
+  ): Promise<{ notebookId: string | null; noteId: string | null }> {
+    let notebookId = refs.notebookId ?? null;
+    const noteId = refs.noteId ?? null;
+
+    if (noteId) {
+      const note = await this.notesService.findOne(noteId, userId);
+      if (notebookId && note.notebookId && note.notebookId !== notebookId) {
+        throw new BadRequestException(
+          'noteId does not belong to the given notebookId.',
+        );
+      }
+      if (!notebookId && note.notebookId) {
+        notebookId = note.notebookId;
+      }
+    }
+
+    if (notebookId) {
+      await this.notebooksService.findOne(notebookId, userId);
+    }
+
+    return { notebookId, noteId };
   }
 
   async findAll(
@@ -75,7 +123,11 @@ export class SnapsService {
       noteId?: string;
     } = {},
   ): Promise<Snap[]> {
-    const scope = options.scope ?? SnapListScope.ALL;
+    const scope = this.resolveScope(
+      options.scope ?? SnapListScope.ALL,
+      options.notebookId,
+      options.noteId,
+    );
     const cacheKey = this.listCacheKey(
       userId,
       scope,
@@ -121,6 +173,10 @@ export class SnapsService {
 
   async create(input: CreateSnapInput, userId: string): Promise<Snap> {
     const file = await this.assertImageFile(userId, input.fileId);
+    const refs = await this.validateScopeRefs(userId, {
+      notebookId: input.notebookId ?? null,
+      noteId: input.noteId ?? null,
+    });
 
     const userSnaps = this.db
       .select({ sortOrder: snaps.sortOrder })
@@ -144,8 +200,8 @@ export class SnapsService {
         caption: input.caption?.trim() || null,
         fileId: input.fileId,
         mimeType: file.mimeType,
-        notebookId: input.notebookId ?? null,
-        noteId: input.noteId ?? null,
+        notebookId: refs.notebookId,
+        noteId: refs.noteId,
         sortOrder: nextOrder,
         createdAt: now,
         updatedAt: now,
@@ -153,11 +209,28 @@ export class SnapsService {
       .run();
 
     this.invalidateListCaches(userId);
+
+    await this.notificationsService.create(
+      userId,
+      'SNAP_CREATED',
+      `Snap "${input.title?.trim() || 'Untitled snap'}" was added.`,
+    );
+
     return this.findOne(id, userId);
   }
 
   async update(input: UpdateSnapInput, userId: string): Promise<Snap> {
     const existing = await this.findOne(input.id, userId);
+
+    const refs = await this.validateScopeRefs(userId, {
+      notebookId:
+        input.notebookId !== undefined
+          ? input.notebookId
+          : existing.notebookId ?? null,
+      noteId:
+        input.noteId !== undefined ? input.noteId : existing.noteId ?? null,
+    });
+
     const now = new Date().toISOString();
 
     this.db
@@ -167,13 +240,9 @@ export class SnapsService {
         caption:
           input.caption !== undefined
             ? input.caption.trim() || null
-            : existing.caption ?? null,
-        notebookId:
-          input.notebookId !== undefined
-            ? input.notebookId
-            : existing.notebookId ?? null,
-        noteId:
-          input.noteId !== undefined ? input.noteId : existing.noteId ?? null,
+            : (existing.caption ?? null),
+        notebookId: refs.notebookId,
+        noteId: refs.noteId,
         updatedAt: now,
       })
       .where(and(eq(snaps.id, input.id), eq(snaps.userId, userId)))
@@ -184,6 +253,10 @@ export class SnapsService {
   }
 
   async reorder(ids: string[], userId: string): Promise<Snap[]> {
+    if (ids.length === 0) {
+      return this.findAll(userId);
+    }
+
     const owned = this.db
       .select({ id: snaps.id })
       .from(snaps)
@@ -211,11 +284,29 @@ export class SnapsService {
   }
 
   async remove(id: string, userId: string): Promise<boolean> {
-    await this.findOne(id, userId);
+    const existing = await this.findOne(id, userId);
+
     this.db
       .delete(snaps)
       .where(and(eq(snaps.id, id), eq(snaps.userId, userId)))
       .run();
+
+    const remainingWithFile = this.db
+      .select({ id: snaps.id })
+      .from(snaps)
+      .where(
+        and(eq(snaps.userId, userId), eq(snaps.fileId, existing.fileId)),
+      )
+      .all();
+
+    if (remainingWithFile.length === 0) {
+      try {
+        await this.filesService.remove(userId, existing.fileId);
+      } catch {
+        // File may already be deleted from disk.
+      }
+    }
+
     this.invalidateListCaches(userId);
     return true;
   }

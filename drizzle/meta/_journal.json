@@ -78,6 +78,13 @@
       "when": 1779550000000,
       "tag": "0010_snaps",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1780075000000,
+      "tag": "0011_workspace_tags",
+      "breakpoints": true
     }
   ]
 }

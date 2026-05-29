@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { User } from '../../users/user.model';
 
 @ObjectType()
@@ -14,6 +14,15 @@ export class Tag {
 
   @Field()
   userId: string;
+
+  @Field({ nullable: true })
+  notebookId?: string;
+
+  @Field(() => Int)
+  sortOrder: number;
+
+  @Field(() => Int)
+  noteCount: number;
 
   @Field(() => User, { nullable: true })
   user?: User;

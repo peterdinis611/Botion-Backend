@@ -72,6 +72,9 @@ type Tag {
   name: String!
   color: String!
   userId: String!
+  notebookId: String
+  sortOrder: Int!
+  noteCount: Int!
   user: User
   createdAt: String!
 }
@@ -162,6 +165,16 @@ type Snap {
   updatedAt: String!
 }
 
+type InviteWorkspaceMemberResult {
+  success: Boolean!
+  message: String!
+}
+
+type PageShareLink {
+  path: String!
+  title: String!
+}
+
 type AppEvent {
   action: AppEventAction!
   userId: String!
@@ -186,21 +199,24 @@ type Query {
   me: User
   users: [User!]!
   user(id: String!): User
-  notes(includeArchived: Boolean = false, notebookId: ID, folderId: ID, isPinned: Boolean, searchQuery: String, tagIds: [String!]): [Note!]!
+  notes(includeArchived: Boolean = false, onlyArchived: Boolean = false, notebookId: ID, folderId: ID, isPinned: Boolean, searchQuery: String, tagIds: [String!]): [Note!]!
   note(id: ID!): Note!
   noteShares(noteId: ID!): [NoteShare!]!
   notebooks: [Notebook!]!
   notebook(id: ID!): Notebook!
-  tags: [Tag!]!
-  notifications: [Notification!]!
+  tags(notebookId: ID, includeGlobal: Boolean): [Tag!]!
+  workspaceTags(notebookId: ID!): [Tag!]!
   folders: [Folder!]!
   folder(id: ID!): Folder!
+  notifications: [Notification!]!
   calendarEvents(from: String, to: String): [CalendarEvent!]!
   calendarEvent(id: ID!): CalendarEvent!
   graphs: [Graph!]!
   graph(id: ID!): Graph!
   snaps(scope: SnapListScope, notebookId: ID, noteId: ID): [Snap!]!
   snap(id: ID!): Snap!
+  pageShareLink(noteId: ID!): PageShareLink!
+  resolvePageShare(path: String!): PageShareLink!
 }
 
 enum SnapListScope {
@@ -221,6 +237,7 @@ type Mutation {
   updateNote(input: UpdateNoteInput!): Note!
   restoreNoteRevision(revisionId: ID!): Note!
   removeNote(id: ID!): Boolean!
+  emptyTrash: Int!
   shareNote(input: ShareNoteInput!): NoteShare!
   unshareNote(input: UnshareNoteInput!): Boolean!
   createNotebook(input: CreateNotebookInput!): Notebook!
@@ -230,13 +247,13 @@ type Mutation {
   createTag(input: CreateTagInput!): Tag!
   updateTag(input: UpdateTagInput!): Tag!
   removeTag(id: ID!): Boolean!
-  markNotificationAsRead(id: ID!): Notification!
-  markAllNotificationsAsRead: Boolean!
   createFolder(input: CreateFolderInput!): Folder!
   updateFolder(input: UpdateFolderInput!): Folder!
   removeFolder(id: ID!): Boolean!
   reorderFolders(ids: [ID!]!): [Folder!]!
   moveNotebookToFolder(notebookId: ID!, folderId: ID): Notebook!
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead: Boolean!
   createCalendarEvent(input: CreateCalendarEventInput!): CalendarEvent!
   updateCalendarEvent(input: UpdateCalendarEventInput!): CalendarEvent!
   removeCalendarEvent(id: ID!): Boolean!
@@ -247,6 +264,7 @@ type Mutation {
   updateSnap(input: UpdateSnapInput!): Snap!
   reorderSnaps(ids: [ID!]!): [Snap!]!
   removeSnap(id: ID!): Boolean!
+  inviteWorkspaceMember(input: InviteWorkspaceMemberInput!): InviteWorkspaceMemberResult!
 }
 
 input RegisterInput {
@@ -353,12 +371,15 @@ input UpdateNotebookInput {
 input CreateTagInput {
   name: String!
   color: String
+  notebookId: String
 }
 
 input UpdateTagInput {
   id: ID!
   name: String
   color: String
+  notebookId: String
+  sortOrder: Int
 }
 
 input CreateFolderInput {
@@ -424,6 +445,11 @@ input UpdateSnapInput {
   caption: String
   notebookId: String
   noteId: String
+}
+
+input InviteWorkspaceMemberInput {
+  email: String!
+  message: String
 }
 
 type Subscription {

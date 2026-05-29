@@ -82,17 +82,31 @@ export const notes = sqliteTable('notes', {
     .notNull(),
 });
 
-export const tags = sqliteTable('tags', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  color: text('color').default('#808080').notNull(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  createdAt: text('created_at')
-    .default(sql`(CURRENT_TIMESTAMP)`)
-    .notNull(),
-});
+export const tags = sqliteTable(
+  'tags',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    color: text('color').default('#808080').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    notebookId: text('notebook_id').references(() => notebooks.id, {
+      onDelete: 'set null',
+    }),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: text('created_at')
+      .default(sql`(CURRENT_TIMESTAMP)`)
+      .notNull(),
+  },
+  (t) => ({
+    userNameNotebookUniq: uniqueIndex('tags_user_name_notebook_unique').on(
+      t.userId,
+      t.name,
+      t.notebookId,
+    ),
+  }),
+);
 
 export const notesToTags = sqliteTable(
   'notes_to_tags',

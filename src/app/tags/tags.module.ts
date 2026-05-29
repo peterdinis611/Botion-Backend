@@ -3,9 +3,10 @@ import { TagsService } from './tags.service';
 import { TagsResolver } from './tags.resolver';
 import { UsersModule } from '../../users/users.module';
 import { AuthModule } from '../../auth/auth.module';
+import { NotebooksModule } from '../notebooks/notebooks.module';
 
 @Module({
-  imports: [UsersModule, AuthModule],
+  imports: [UsersModule, AuthModule, NotebooksModule],
   providers: [TagsService, TagsResolver],
   exports: [TagsService],
 })

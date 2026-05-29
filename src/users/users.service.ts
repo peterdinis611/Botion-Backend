@@ -8,7 +8,7 @@ import {
 import { DRIZZLE } from '../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../drizzle/drizzle.provider';
 import { users } from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { CreateUserInput, UpdateUserInput } from './user.dto';
 import { User, UserRole, UserStatus } from './user.model';
 import {
@@ -66,16 +66,18 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<DbUser | null> {
+    const normalized = email.trim().toLowerCase();
     const results = this.db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(sql`lower(${users.email}) = ${normalized}`)
       .all();
     return results[0] || null;
   }
 
   async create(input: CreateUserInput): Promise<User> {
-    const existingUser = await this.findByEmail(input.email);
+    const email = input.email.trim().toLowerCase();
+    const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException(
         `Email "${input.email}" is already registered.`,
@@ -86,8 +88,8 @@ export class UsersService {
     const id = crypto.randomUUID();
     const newUser = {
       id,
-      name: input.name,
-      email: input.email,
+      name: input.name.trim(),
+      email,
       role: input.role ?? 'USER',
       status: input.status ?? 'ACTIVE',
       bio: input.bio ?? null,

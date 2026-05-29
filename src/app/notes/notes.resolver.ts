@@ -6,6 +6,7 @@ import {
   ResolveField,
   Parent,
   ID,
+  Int,
 } from '@nestjs/graphql';
 import { NotesService } from './notes.service';
 import { Note } from './note.model';
@@ -50,6 +51,12 @@ export class NotesResolver {
       defaultValue: false,
     })
     includeArchived: boolean,
+    @Args('onlyArchived', {
+      type: () => Boolean,
+      nullable: true,
+      defaultValue: false,
+    })
+    onlyArchived: boolean,
     @Args('notebookId', { type: () => ID, nullable: true })
     notebookId?: string,
     @Args('folderId', { type: () => ID, nullable: true })
@@ -63,6 +70,7 @@ export class NotesResolver {
   ) {
     return this.notesService.findAll(currentUser.sub, {
       includeArchived,
+      onlyArchived,
       notebookId,
       folderId,
       isPinned,
@@ -109,6 +117,11 @@ export class NotesResolver {
     @Args('id', { type: () => ID }) id: string,
   ) {
     return this.notesService.remove(id, currentUser.sub);
+  }
+
+  @Mutation(() => Int, { name: 'emptyTrash' })
+  async emptyTrash(@CurrentUser() currentUser: JwtPayload) {
+    return this.notesService.emptyTrash(currentUser.sub);
   }
 
   // ─── Sharing ─────────────────────────────────────────────────────────────────

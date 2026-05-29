@@ -1,10 +1,11 @@
-import { InputType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, InputType, Int } from '@nestjs/graphql';
 import {
-  IsString,
-  MinLength,
-  MaxLength,
+  IsInt,
   IsOptional,
+  IsString,
   Matches,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
 
 @InputType()
@@ -22,6 +23,11 @@ export class CreateTagInput {
     message: 'Color must be a valid 6-character CSS Hex string (e.g. #808080)',
   })
   color?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notebookId?: string;
 }
 
 @InputType()
@@ -44,4 +50,14 @@ export class UpdateTagInput {
     message: 'Color must be a valid 6-character CSS Hex string (e.g. #808080)',
   })
   color?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notebookId?: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  sortOrder?: number;
 }

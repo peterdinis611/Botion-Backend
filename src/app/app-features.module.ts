@@ -8,6 +8,7 @@ import { FilesModule } from './files/files.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { GraphsModule } from './graphs/graphs.module';
 import { SnapsModule } from './snaps/snaps.module';
+import { WorkspaceModule } from './workspace/workspace.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -22,6 +23,7 @@ import { AppService } from './app.service';
     CalendarModule,
     GraphsModule,
     SnapsModule,
+    WorkspaceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
