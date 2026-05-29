@@ -71,6 +71,13 @@
       "when": 1779549370234,
       "tag": "0009_busy_captain_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1779550000000,
+      "tag": "0010_snaps",
+      "breakpoints": true
     }
   ]
 }

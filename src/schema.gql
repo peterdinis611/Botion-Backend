@@ -2,8 +2,15 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type SnapsPanelPreferences {
+  showCaptions: Boolean!
+  compactCards: Boolean!
+  sortNewestFirst: Boolean!
+}
+
 type UserPreferences {
   sidebarCollapsed: Boolean!
+  snapsPanel: SnapsPanelPreferences!
 }
 
 type User {
@@ -141,6 +148,20 @@ type Graph {
   updatedAt: String!
 }
 
+type Snap {
+  id: ID!
+  userId: String!
+  title: String!
+  caption: String
+  fileId: String!
+  mimeType: String!
+  notebookId: String
+  noteId: String
+  sortOrder: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
 type AppEvent {
   action: AppEventAction!
   userId: String!
@@ -178,6 +199,14 @@ type Query {
   calendarEvent(id: ID!): CalendarEvent!
   graphs: [Graph!]!
   graph(id: ID!): Graph!
+  snaps(scope: SnapListScope, notebookId: ID, noteId: ID): [Snap!]!
+  snap(id: ID!): Snap!
+}
+
+enum SnapListScope {
+  ALL
+  NOTEBOOK
+  NOTE
 }
 
 type Mutation {
@@ -214,6 +243,10 @@ type Mutation {
   createGraph(input: CreateGraphInput!): Graph!
   updateGraph(input: UpdateGraphInput!): Graph!
   removeGraph(id: ID!): Boolean!
+  createSnap(input: CreateSnapInput!): Snap!
+  updateSnap(input: UpdateSnapInput!): Snap!
+  reorderSnaps(ids: [ID!]!): [Snap!]!
+  removeSnap(id: ID!): Boolean!
 }
 
 input RegisterInput {
@@ -259,6 +292,13 @@ input UpdateMyProfileInput {
 
 input UpdateUserPreferencesInput {
   sidebarCollapsed: Boolean
+  snapsPanel: UpdateSnapsPanelPreferencesInput
+}
+
+input UpdateSnapsPanelPreferencesInput {
+  showCaptions: Boolean
+  compactCards: Boolean
+  sortNewestFirst: Boolean
 }
 
 input CreateNoteInput {
@@ -368,6 +408,22 @@ input UpdateGraphInput {
   nodesJson: String
   edgesJson: String
   viewportJson: String
+}
+
+input CreateSnapInput {
+  fileId: String!
+  title: String
+  caption: String
+  notebookId: String
+  noteId: String
+}
+
+input UpdateSnapInput {
+  id: ID!
+  title: String
+  caption: String
+  notebookId: String
+  noteId: String
 }
 
 type Subscription {

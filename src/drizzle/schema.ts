@@ -175,6 +175,28 @@ export const graphs = sqliteTable('graphs', {
     .notNull(),
 });
 
+export const snaps = sqliteTable('snaps', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').default('Untitled snap').notNull(),
+  caption: text('caption'),
+  fileId: text('file_id').notNull(),
+  mimeType: text('mime_type').notNull(),
+  notebookId: text('notebook_id').references(() => notebooks.id, {
+    onDelete: 'set null',
+  }),
+  noteId: text('note_id').references(() => notes.id, { onDelete: 'set null' }),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: text('created_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: text('updated_at')
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
 export const calendarEvents = sqliteTable('calendar_events', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),

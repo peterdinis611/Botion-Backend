@@ -139,6 +139,15 @@ export class UsersService {
     const current = parseUserPreferencesJson(dbUser.preferences);
     const next: UserPreferencesData = {
       sidebarCollapsed: input.sidebarCollapsed ?? current.sidebarCollapsed,
+      snapsPanel: {
+        showCaptions:
+          input.snapsPanel?.showCaptions ?? current.snapsPanel.showCaptions,
+        compactCards:
+          input.snapsPanel?.compactCards ?? current.snapsPanel.compactCards,
+        sortNewestFirst:
+          input.snapsPanel?.sortNewestFirst ??
+          current.snapsPanel.sortNewestFirst,
+      },
     };
 
     this.db

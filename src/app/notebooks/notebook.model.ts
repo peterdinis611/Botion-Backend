@@ -6,19 +6,19 @@ import { Folder } from '../folders/folder.model';
 @ObjectType()
 export class Notebook {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  name: string;
+  name!: string;
 
   @Field()
-  color: string;
+  color!: string;
 
   @Field()
-  sortOrder: number;
+  sortOrder!: number;
 
   @Field()
-  userId: string;
+  userId!: string;
 
   @Field(() => ID, { nullable: true })
   folderId?: string;
@@ -33,8 +33,8 @@ export class Notebook {
   notes?: Note[];
 
   @Field()
-  createdAt: string;
+  createdAt!: string;
 
   @Field()
-  updatedAt: string;
+  updatedAt!: string;
 }
