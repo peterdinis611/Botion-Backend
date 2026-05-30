@@ -1,98 +1,137 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Botion — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS API for [Botion](https://github.com): a Notion-style workspace with notes, notebooks, tags, Snaps, graphs, calendar, sharing, and real-time updates.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech stack
 
-## Description
+- **NestJS 11** — HTTP API and GraphQL
+- **Apollo Server** — GraphQL (`/graphql`) with WebSocket subscriptions (`graphql-ws`)
+- **Drizzle ORM** — SQLite via `better-sqlite3`
+- **JWT** — Authentication for queries, mutations, and subscriptions
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Prerequisites
 
-## Project setup
+- **Node.js** 20+
+- **pnpm** (recommended)
+
+Native build tools may be required for `better-sqlite3` (macOS: Xcode CLT; Linux: `build-essential`).
+
+## Quick start
 
 ```bash
-$ pnpm install
+cd backend
+pnpm install
+cp .env.example .env
+pnpm start:dev
 ```
 
-## Compile and run the project
+The API listens on **http://localhost:3000** by default. GraphQL playground: **http://localhost:3000/graphql**.
+
+Start the [frontend](../frontend/README.md) on port **3001** so CORS and auth flows work out of the box.
+
+On startup, the app:
+
+1. Locates the backend package root (finds `drizzle/meta/_journal.json`)
+2. Opens **`sqlite.db`** at the package root (not inside `dist/`)
+3. Runs Drizzle migrations and applies critical schema patches if needed
+
+You should see a log line like: `Using database: …/backend/sqlite.db`
+
+## Environment variables
+
+Copy `.env.example` to `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `JWT_SECRET` | *(required in prod)* | Signing key for access tokens. Keep stable across restarts or all sessions invalidate. |
+| `JWT_EXPIRES_IN_SECONDS` | `2592000` (30 days) | Token lifetime |
+| `PORT` | `3000` | HTTP port |
+| `FRONTEND_URL` | `http://localhost:3001` | CORS allowed origin |
+| `DEMO_ACCOUNTS_ENABLED` | enabled | Set to `false` to disable `createDemoAccount` |
+| `TMP_FILE_MAX_AGE_HOURS` | — | Temp upload cleanup age |
+| `TMP_CLEANUP_ENABLED` | enabled | Set to `false` to disable temp file cleanup job |
+| `TMP_CLEANUP_CRON` | hourly | Cron expression for cleanup |
+
+## Database
+
+- **File:** `backend/sqlite.db` (gitignored)
+- **Schema:** `src/drizzle/schema.ts`
+- **Migrations:** `drizzle/*.sql`
 
 ```bash
-# development
-$ pnpm run start
+# Generate a migration after schema changes
+pnpm db:generate
 
-# watch mode
-$ pnpm run start:dev
+# Push schema (dev only; prefer migrations in shared environments)
+pnpm db:push
 
-# production mode
-$ pnpm run start:prod
+# Open Drizzle Studio
+pnpm db:studio
 ```
 
-## Run tests
+If create workspace/page fails after a pull, restart `pnpm start:dev` and confirm migrations ran (check startup logs and `sort_order` / latest columns exist).
 
-```bash
-# unit tests
-$ pnpm run test
+## Project structure
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+```
+src/
+├── auth/              # JWT, login, register, demo accounts
+├── users/             # User profile and preferences
+├── drizzle/           # Schema, provider, migrations runner
+├── events/            # GraphQL subscriptions (app events)
+├── cache/             # In-memory cache for notes/notebooks
+└── app/
+    ├── notes/         # Pages, sharing, revisions
+    ├── notebooks/     # Workspaces / notebooks
+    ├── folders/       # Folder hierarchy
+    ├── tags/          # Tags (global and per-notebook)
+    ├── snaps/         # Reference panel assets
+    ├── graphs/        # Flow diagrams (React Flow payload)
+    ├── calendar/      # Calendar events
+    ├── workspace/     # Invites, collaborators, page share links
+    ├── notifications/
+    └── files/         # Uploads and temp file cleanup
 ```
 
-## Deployment
+Generated GraphQL schema: `src/schema.gql` (auto-updated in dev).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## GraphQL overview
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+**Public mutations**
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+- `register`, `login`, `createDemoAccount`
+
+**Authenticated** (Bearer token in `Authorization` header; subscriptions use `connectionParams.authorization`)
+
+- **Notes:** `createNote`, `updateNote`, `removeNote`, `reorderNotes`, `sharePageWithCollaborator`, `unshareNote`, …
+- **Workspace:** `inviteWorkspaceMember`, `cancelWorkspaceInvite`, `acceptWorkspaceInvite`, `workspaceCollaborators`
+- **Snaps, graphs, calendar, tags, folders, notebooks** — CRUD + list queries
+- **Subscriptions:** `appEvent` — live note/workspace updates
+
+Use the GraphQL playground at `/graphql` with a token from `login` or `register`:
+
+```http
+Authorization: Bearer <token>
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Scripts
 
-## Resources
+| Command | Description |
+|---------|-------------|
+| `pnpm start:dev` | Dev server with watch |
+| `pnpm build` | Compile to `dist/` |
+| `pnpm start:prod` | Run `node dist/main` |
+| `pnpm test` | Unit tests (Jest) |
+| `pnpm test:e2e` | E2E tests |
+| `pnpm lint` | ESLint |
 
-Check out a few resources that may come in handy when working with NestJS:
+## Development notes
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Run commands from **`backend/`**, not the repo root.
+- After `nest build`, runtime still resolves DB and migrations from the backend package root (see `drizzle.provider.ts`).
+- Soft delete for notes uses `isArchived`; deleting a notebook archives its notes first.
+- File uploads are served under the files module; temp uploads are cleaned on a schedule.
 
-## Support
+## Related
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- [Frontend README](../frontend/README.md)
