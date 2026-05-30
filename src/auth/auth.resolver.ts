@@ -15,4 +15,11 @@ export class AuthResolver {
   async login(@Args('input') input: LoginInput) {
     return this.authService.login(input);
   }
+
+  @Mutation(() => AuthPayload, {
+    description: 'Create a temporary demo workspace with sample content.',
+  })
+  async createDemoAccount() {
+    return this.authService.createDemoAccount();
+  }
 }

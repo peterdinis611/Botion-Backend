@@ -258,6 +258,9 @@ enum SnapListScope {
 type Mutation {
   register(input: RegisterInput!): AuthPayload!
   login(input: LoginInput!): AuthPayload!
+
+  """Create a temporary demo workspace with sample content."""
+  createDemoAccount: AuthPayload!
   createUser(input: CreateUserInput!): User!
   updateUser(input: UpdateUserInput!): User!
   updateMyProfile(input: UpdateMyProfileInput!): User!
