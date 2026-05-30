@@ -74,6 +74,7 @@ export const notes = sqliteTable('notes', {
     .default(false)
     .notNull(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: text('created_at')
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),

@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
-import { notebooks } from '../../drizzle/schema';
+import { notebooks, notes } from '../../drizzle/schema';
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import { CreateNotebookInput, UpdateNotebookInput } from './notebook.dto';
 import { Notebook } from './notebook.model';
@@ -160,6 +160,13 @@ export class NotebooksService {
     // Ensure the notebook exists and belongs to this user
     const notebook = await this.findOne(id, userId);
     const folderId = notebook.folderId;
+
+    const now = new Date().toISOString();
+    this.db
+      .update(notes)
+      .set({ isArchived: true, updatedAt: now })
+      .where(and(eq(notes.notebookId, id), eq(notes.userId, userId)))
+      .run();
 
     this.db
       .delete(notebooks)

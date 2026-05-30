@@ -98,6 +98,7 @@ type Note {
   color: String!
   isArchived: Boolean!
   isPinned: Boolean!
+  sortOrder: Float!
   tags: [Tag!]
   revisions: [NoteRevision!]
   createdAt: String!
@@ -173,6 +174,7 @@ type WorkspaceCollaborator {
   status: CollaboratorStatus!
   permission: String
   noteId: String
+  inviteId: String
 }
 
 enum CollaboratorStatus {
@@ -195,6 +197,11 @@ type AcceptWorkspaceInviteResult {
 type PageShareLink {
   path: String!
   title: String!
+}
+
+type CancelWorkspaceInviteResult {
+  success: Boolean!
+  message: String!
 }
 
 type AppEvent {
@@ -263,6 +270,7 @@ type Mutation {
   emptyTrash: Int!
   shareNote(input: ShareNoteInput!): NoteShare!
   unshareNote(input: UnshareNoteInput!): Boolean!
+  reorderNotes(ids: [ID!]!, notebookId: ID): [Note!]!
   createNotebook(input: CreateNotebookInput!): Notebook!
   updateNotebook(input: UpdateNotebookInput!): Notebook!
   removeNotebook(id: ID!): Boolean!
@@ -277,6 +285,7 @@ type Mutation {
   moveNotebookToFolder(notebookId: ID!, folderId: ID): Notebook!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead: Boolean!
+  removeNotification(id: ID!): Boolean!
   createCalendarEvent(input: CreateCalendarEventInput!): CalendarEvent!
   updateCalendarEvent(input: UpdateCalendarEventInput!): CalendarEvent!
   removeCalendarEvent(id: ID!): Boolean!
@@ -289,6 +298,7 @@ type Mutation {
   removeSnap(id: ID!): Boolean!
   inviteWorkspaceMember(input: InviteWorkspaceMemberInput!): InviteWorkspaceMemberResult!
   acceptWorkspaceInvite(input: AcceptWorkspaceInviteInput!): AcceptWorkspaceInviteResult!
+  cancelWorkspaceInvite(input: CancelWorkspaceInviteInput!): CancelWorkspaceInviteResult!
   sharePageWithCollaborator(input: SharePageInput!): NoteShare!
 }
 
@@ -478,6 +488,10 @@ input InviteWorkspaceMemberInput {
 }
 
 input AcceptWorkspaceInviteInput {
+  inviteId: String!
+}
+
+input CancelWorkspaceInviteInput {
   inviteId: String!
 }
 

@@ -49,6 +49,22 @@ export class PageShareLink {
 }
 
 @InputType()
+export class CancelWorkspaceInviteInput {
+  @Field()
+  @IsString()
+  inviteId: string;
+}
+
+@ObjectType()
+export class CancelWorkspaceInviteResult {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+}
+
+@InputType()
 export class SharePageInput {
   @Field()
   @IsEmail()

@@ -8,6 +8,8 @@ import { WorkspaceCollaborator } from './workspace-collaborator.model';
 import {
   AcceptWorkspaceInviteInput,
   AcceptWorkspaceInviteResult,
+  CancelWorkspaceInviteInput,
+  CancelWorkspaceInviteResult,
   InviteWorkspaceMemberInput,
   InviteWorkspaceMemberResult,
   PageShareLink,
@@ -34,6 +36,17 @@ export class WorkspaceResolver {
     @Args('input') input: AcceptWorkspaceInviteInput,
   ) {
     return this.workspaceService.acceptWorkspaceInvite(
+      currentUser.sub,
+      input.inviteId,
+    );
+  }
+
+  @Mutation(() => CancelWorkspaceInviteResult)
+  async cancelWorkspaceInvite(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('input') input: CancelWorkspaceInviteInput,
+  ) {
+    return this.workspaceService.cancelWorkspaceInvite(
       currentUser.sub,
       input.inviteId,
     );

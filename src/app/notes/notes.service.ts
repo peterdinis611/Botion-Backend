@@ -7,7 +7,7 @@ import {
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import type { DrizzleDB } from '../../drizzle/drizzle.provider';
 import { notes } from '../../drizzle/schema';
-import { eq, and, or, like, desc, exists, inArray } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, exists, inArray, isNull } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { CreateNoteInput, UpdateNoteInput } from './note.dto';
 import { Note } from './note.model';
@@ -35,6 +35,7 @@ export function mapDbNoteToModel(dbNote: DbNote): Note {
     color: dbNote.color,
     isArchived: dbNote.isArchived,
     isPinned: dbNote.isPinned,
+    sortOrder: dbNote.sortOrder ?? 0,
     createdAt: dbNote.createdAt,
     updatedAt: dbNote.updatedAt,
   };
@@ -230,7 +231,7 @@ export class NotesService {
       .select()
       .from(notes)
       .where(and(...conditions))
-      .orderBy(desc(notes.isPinned), desc(notes.updatedAt))
+      .orderBy(desc(notes.isPinned), asc(notes.sortOrder), desc(notes.updatedAt))
       .all();
 
     const result = rows.map(mapDbNoteToModel);
@@ -282,15 +283,17 @@ export class NotesService {
   async create(input: CreateNoteInput, userId: string): Promise<Note> {
     const id = crypto.randomUUID();
     const { tagIds, ...noteData } = input;
+    const notebookId = noteData.notebookId ?? null;
     const newNote = {
       id,
       title: noteData.title,
       content: noteData.content,
       userId,
-      notebookId: noteData.notebookId ?? null,
+      notebookId,
       color: noteData.color ?? '#ffffff',
       isArchived: false,
       isPinned: noteData.isPinned ?? false,
+      sortOrder: this.nextNoteSortOrder(userId, notebookId),
     };
 
     this.db.insert(notes).values(newNote).run();
@@ -434,6 +437,69 @@ export class NotesService {
     await this.invalidateNoteCaches(revision.noteId, currentNote.userId);
 
     return this.findOne(revision.noteId, userId);
+  }
+
+  private nextNoteSortOrder(userId: string, notebookId: string | null): number {
+    const conditions = [eq(notes.userId, userId), eq(notes.isArchived, false)];
+    if (notebookId) {
+      conditions.push(eq(notes.notebookId, notebookId));
+    } else {
+      conditions.push(isNull(notes.notebookId));
+    }
+
+    const rows = this.db
+      .select({ sortOrder: notes.sortOrder })
+      .from(notes)
+      .where(and(...conditions))
+      .all();
+
+    if (rows.length === 0) {
+      return 0;
+    }
+    return Math.max(...rows.map((r) => r.sortOrder)) + 1;
+  }
+
+  async reorder(
+    userId: string,
+    notebookId: string | null,
+    ids: string[],
+  ): Promise<Note[]> {
+    const filterScope = (list: Note[]) =>
+      list.filter((note) =>
+        notebookId ? note.notebookId === notebookId : !note.notebookId,
+      );
+
+    if (ids.length === 0) {
+      const all = await this.findAll(userId, { includeArchived: false });
+      return filterScope(all);
+    }
+
+    const allNotes = await this.findAll(userId, { includeArchived: false });
+    const inScope = filterScope(allNotes);
+    const scopeIds = new Set(inScope.map((n) => n.id));
+
+    for (const id of ids) {
+      if (!scopeIds.has(id)) {
+        throw new NotFoundException(`Note with ID "${id}" not found in scope.`);
+      }
+      const note = inScope.find((n) => n.id === id);
+      if (note?.userId !== userId) {
+        throw new ForbiddenException(`Only the owner can reorder this note.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+    ids.forEach((id, index) => {
+      this.db
+        .update(notes)
+        .set({ sortOrder: index, updatedAt: now })
+        .where(and(eq(notes.id, id), eq(notes.userId, userId)))
+        .run();
+    });
+
+    this.cacheService.clearPattern(`user:${userId}:notes:*`);
+    const updated = await this.findAll(userId, { includeArchived: false });
+    return filterScope(updated);
   }
 
   async remove(id: string, userId: string): Promise<boolean> {

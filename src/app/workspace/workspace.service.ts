@@ -181,6 +181,37 @@ export class WorkspaceService {
     };
   }
 
+  async cancelWorkspaceInvite(
+    userId: string,
+    inviteId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const rows = this.db
+      .select()
+      .from(workspaceInvites)
+      .where(eq(workspaceInvites.id, inviteId))
+      .all();
+    const invite = rows[0];
+
+    if (!invite) {
+      throw new NotFoundException('Invitation not found.');
+    }
+
+    if (invite.ownerUserId !== userId) {
+      throw new ForbiddenException('Only the inviter can cancel this invitation.');
+    }
+
+    if (invite.status !== 'PENDING') {
+      throw new BadRequestException('Only pending invitations can be cancelled.');
+    }
+
+    this.db
+      .delete(workspaceInvites)
+      .where(eq(workspaceInvites.id, inviteId))
+      .run();
+
+    return { success: true, message: 'Invitation cancelled.' };
+  }
+
   async listCollaborators(
     userId: string,
     noteId?: string,
@@ -229,6 +260,7 @@ export class WorkspaceService {
             name: u.name,
             email: u.email,
             status: CollaboratorStatus.PENDING_INVITE,
+            inviteId: invite.id,
           });
         } catch {
           map.set(key, {
@@ -236,6 +268,7 @@ export class WorkspaceService {
             name: invite.email.split('@')[0],
             email: invite.email,
             status: CollaboratorStatus.PENDING_INVITE,
+            inviteId: invite.id,
           });
         }
       } else {
@@ -244,6 +277,7 @@ export class WorkspaceService {
           name: invite.email.split('@')[0],
           email: invite.email,
           status: CollaboratorStatus.PENDING_INVITE,
+          inviteId: invite.id,
         });
       }
     }

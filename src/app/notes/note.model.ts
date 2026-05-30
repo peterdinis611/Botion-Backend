@@ -36,6 +36,9 @@ export class Note {
   @Field()
   isPinned: boolean;
 
+  @Field()
+  sortOrder: number;
+
   @Field(() => [Tag], { nullable: true })
   tags?: Tag[];
 

@@ -159,6 +159,19 @@ export class NotesResolver {
     );
   }
 
+  @Mutation(() => [Note])
+  async reorderNotes(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('ids', { type: () => [ID] }) ids: string[],
+    @Args('notebookId', { type: () => ID, nullable: true }) notebookId?: string,
+  ) {
+    return this.notesService.reorder(
+      currentUser.sub,
+      notebookId ?? null,
+      ids,
+    );
+  }
+
   // ─── Resolved Fields ──────────────────────────────────────────────────────────
 
   @ResolveField(() => User)

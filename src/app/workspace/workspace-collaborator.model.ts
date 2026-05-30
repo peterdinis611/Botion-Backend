@@ -28,4 +28,7 @@ export class WorkspaceCollaborator {
 
   @Field({ nullable: true })
   noteId?: string;
+
+  @Field({ nullable: true })
+  inviteId?: string;
 }

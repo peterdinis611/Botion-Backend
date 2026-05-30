@@ -55,6 +55,7 @@ describe('EventsPubSubService', () => {
       color: '#fff',
       isArchived: false,
       isPinned: false,
+      sortOrder: 0,
       createdAt: '',
       updatedAt: '',
     });

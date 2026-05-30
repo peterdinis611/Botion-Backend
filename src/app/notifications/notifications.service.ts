@@ -112,4 +112,23 @@ export class NotificationsService {
 
     return true;
   }
+
+  async remove(id: string, userId: string): Promise<boolean> {
+    const results = this.db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+      .all();
+
+    if (results.length === 0) {
+      throw new NotFoundException(`Notification with ID "${id}" not found.`);
+    }
+
+    this.db
+      .delete(notifications)
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+      .run();
+
+    return true;
+  }
 }

@@ -28,4 +28,12 @@ export class NotificationsResolver {
   async markAllNotificationsAsRead(@CurrentUser() currentUser: JwtPayload) {
     return this.notificationsService.markAllAsRead(currentUser.sub);
   }
+
+  @Mutation(() => Boolean)
+  async removeNotification(
+    @CurrentUser() currentUser: JwtPayload,
+    @Args('id', { type: () => ID }) id: string,
+  ) {
+    return this.notificationsService.remove(id, currentUser.sub);
+  }
 }
