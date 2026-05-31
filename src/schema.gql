@@ -204,6 +204,12 @@ type CancelWorkspaceInviteResult {
   message: String!
 }
 
+type DailyBriefing {
+  date: String!
+  calendarEvents: [CalendarEvent!]!
+  importantNotes: [Note!]!
+}
+
 type AppEvent {
   action: AppEventAction!
   userId: String!
@@ -247,6 +253,7 @@ type Query {
   pageShareLink(noteId: ID!): PageShareLink!
   resolvePageShare(path: String!): PageShareLink!
   workspaceCollaborators(noteId: ID): [WorkspaceCollaborator!]!
+  dailyBriefing(date: String!): DailyBriefing!
 }
 
 enum SnapListScope {
