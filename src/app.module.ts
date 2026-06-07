@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import responseCachePlugin from '@apollo/server-plugin-response-cache';
 import { join } from 'path';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { UsersModule } from './users/users.module';
@@ -22,6 +23,7 @@ import type { Context } from 'graphql-ws';
       inject: [JwtService],
       useFactory: (jwtService: JwtService) => ({
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        plugins: [responseCachePlugin()],
         subscriptions: {
           'graphql-ws': {
             onConnect: async (context: Context) => {

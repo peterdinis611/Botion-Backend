@@ -11,6 +11,9 @@ importers:
       '@apollo/server':
         specifier: ^5.5.1
         version: 5.5.1(graphql@16.14.0)
+      '@apollo/server-plugin-response-cache':
+        specifier: ^5.0.0
+        version: 5.0.0(@apollo/server@5.5.1(graphql@16.14.0))(graphql@16.14.0)
       '@as-integrations/express5':
         specifier: ^1.1.2
         version: 1.1.2(@apollo/server@5.5.1(graphql@16.14.0))(express@5.2.1)
@@ -188,6 +191,13 @@ packages:
     deprecated: The use of GraphQL Playground in Apollo Server was supported in previous versions, but this is no longer the case as of December 31, 2022. This package exists for v4 migration purposes only. We do not intend to resolve security issues or other bugs with this package if they arise, so please migrate away from this to [Apollo Server's default Explorer](https://www.apollographql.com/docs/apollo-server/api/plugin/landing-pages) as soon as possible.
     peerDependencies:
       '@apollo/server': ^4.0.0
+
+  '@apollo/server-plugin-response-cache@5.0.0':
+    resolution: {integrity: sha512-q78R0jUP642EjBvfzkAV5HtM0fcoA0/D2tBGQdXPShj6PvcV2UDhaw6Yw/N9rkXKJmFtXZiGyDyOssfWO1cTxw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@apollo/server': ^5.0.0
+      graphql: ^16.11.0
 
   '@apollo/server@5.5.1':
     resolution: {integrity: sha512-Rn3g5TJQsMSUY23CWZTghWdBWyjX7dP1eaEBPkvmM2RHi82cDcpgTIkSCbGvtTUEGjwopLv1AAooU/n7iIZ20A==}
@@ -4308,6 +4318,13 @@ snapshots:
     dependencies:
       '@apollo/server': 5.5.1(graphql@16.14.0)
       '@apollographql/graphql-playground-html': 1.6.29
+
+  '@apollo/server-plugin-response-cache@5.0.0(@apollo/server@5.5.1(graphql@16.14.0))(graphql@16.14.0)':
+    dependencies:
+      '@apollo/server': 5.5.1(graphql@16.14.0)
+      '@apollo/utils.createhash': 3.0.1
+      '@apollo/utils.keyvaluecache': 4.0.0
+      graphql: 16.14.0
 
   '@apollo/server@5.5.1(graphql@16.14.0)':
     dependencies:
