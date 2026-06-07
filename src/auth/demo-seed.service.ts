@@ -94,7 +94,7 @@ export class DemoSeedService {
             {
               type: 'paragraph',
               content:
-                'This account is pre-filled with sample pages so you can explore notes, tags, and the Snaps panel right away.',
+                'This account is pre-filled with sample pages so you can explore notes, tags, and workspaces right away.',
             },
             {
               type: 'heading',
@@ -102,7 +102,7 @@ export class DemoSeedService {
               content: 'Try this',
             },
             { type: 'bulletListItem', content: 'Edit this page or create a new one' },
-            { type: 'bulletListItem', content: 'Open Snaps on the right to pin references' },
+            { type: 'bulletListItem', content: 'Browse graphs and calendar from the top bar' },
             { type: 'bulletListItem', content: 'Use ⌘K to search across your workspace' },
           ]),
         },

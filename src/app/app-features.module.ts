@@ -7,7 +7,6 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { GraphsModule } from './graphs/graphs.module';
-import { SnapsModule } from './snaps/snaps.module';
 import { WorkspaceModule } from './workspace/workspace.module';
 import { DailyBriefingModule } from './daily-briefing/daily-briefing.module';
 import { AppController } from './app.controller';
@@ -23,7 +22,6 @@ import { AppService } from './app.service';
     FilesModule,
     CalendarModule,
     GraphsModule,
-    SnapsModule,
     WorkspaceModule,
     DailyBriefingModule,
   ],

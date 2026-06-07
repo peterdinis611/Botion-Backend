@@ -85,6 +85,13 @@
       "when": 1780075000000,
       "tag": "0011_workspace_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1780080000000,
+      "tag": "0012_drop_snaps",
+      "breakpoints": true
     }
   ]
 }
