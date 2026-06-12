@@ -3,6 +3,7 @@ import { TagsService } from './tags.service';
 import { DRIZZLE } from '../../drizzle/drizzle.provider';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { NotebooksService } from '../notebooks/notebooks.service';
+import { CacheService } from '../../cache/cache.service';
 
 describe('TagsService', () => {
   let service: TagsService;
@@ -35,6 +36,15 @@ describe('TagsService', () => {
         {
           provide: NotebooksService,
           useValue: { findOne: jest.fn().mockResolvedValue({ id: 'nb1' }) },
+        },
+        {
+          provide: CacheService,
+          useValue: {
+            get: jest.fn().mockReturnValue(null),
+            set: jest.fn(),
+            delete: jest.fn(),
+            clearPattern: jest.fn(),
+          },
         },
       ],
     }).compile();

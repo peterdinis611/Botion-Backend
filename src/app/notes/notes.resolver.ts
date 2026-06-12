@@ -7,6 +7,7 @@ import {
   Parent,
   ID,
   Int,
+  Directive,
 } from '@nestjs/graphql';
 import { NotesService } from './notes.service';
 import { Note } from './note.model';
@@ -42,6 +43,7 @@ export class NotesResolver {
     private readonly noteRevisionsService: NoteRevisionsService,
   ) {}
 
+  @Directive('@cacheControl(maxAge: 60, scope: PRIVATE)')
   @Query(() => [Note], { name: 'notes' })
   async getNotes(
     @CurrentUser() currentUser: JwtPayload,

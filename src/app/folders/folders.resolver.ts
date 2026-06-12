@@ -6,6 +6,7 @@ import {
   ResolveField,
   Parent,
   ID,
+  Directive,
 } from '@nestjs/graphql';
 import { FoldersService } from './folders.service';
 import { Folder } from './folder.model';
@@ -29,6 +30,7 @@ export class FoldersResolver {
     private readonly notebooksService: NotebooksService,
   ) {}
 
+  @Directive('@cacheControl(maxAge: 90, scope: PRIVATE)')
   @Query(() => [Folder], { name: 'folders' })
   async getFolders(@CurrentUser() currentUser: JwtPayload) {
     return this.foldersService.findAll(currentUser.sub);

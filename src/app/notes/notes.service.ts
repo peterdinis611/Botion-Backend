@@ -21,7 +21,13 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { EventsPubSubService } from '../../events/events-pub-sub.service';
 import { AppEventAction } from '../../events/app-event-action.enum';
 
-const NOTE_TTL_MS = 60_000; // 60 seconds
+import {
+  CACHE_TTL_DETAIL_MS,
+  CACHE_TTL_LIST_HOT_MS,
+} from '../../cache/cache.constants';
+
+const NOTE_LIST_TTL_MS = CACHE_TTL_LIST_HOT_MS;
+const NOTE_DETAIL_TTL_MS = CACHE_TTL_DETAIL_MS;
 
 export type DbNote = typeof notes.$inferSelect;
 
@@ -235,7 +241,7 @@ export class NotesService {
       .all();
 
     const result = rows.map(mapDbNoteToModel);
-    this.cacheService.set(cacheKey, result, NOTE_TTL_MS);
+    this.cacheService.set(cacheKey, result, NOTE_LIST_TTL_MS);
     return result;
   }
 
@@ -276,7 +282,7 @@ export class NotesService {
     }
 
     const model = mapDbNoteToModel(note);
-    this.cacheService.set(cacheKey, model, NOTE_TTL_MS);
+    this.cacheService.set(cacheKey, model, NOTE_DETAIL_TTL_MS);
     return model;
   }
 

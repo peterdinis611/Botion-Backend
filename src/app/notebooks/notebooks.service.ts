@@ -8,7 +8,10 @@ import { Notebook } from './notebook.model';
 import * as crypto from 'crypto';
 import { CacheService } from '../../cache/cache.service';
 
-const NOTEBOOK_TTL_MS = 60_000; // 60 seconds
+import { CACHE_TTL_DETAIL_MS, CACHE_TTL_LIST_STABLE_MS } from '../../cache/cache.constants';
+
+const NOTEBOOK_LIST_TTL_MS = CACHE_TTL_LIST_STABLE_MS;
+const NOTEBOOK_DETAIL_TTL_MS = CACHE_TTL_DETAIL_MS;
 
 export type DbNotebook = typeof notebooks.$inferSelect;
 
@@ -47,7 +50,7 @@ export class NotebooksService {
       .all();
 
     const result = rows.map(mapDbNotebookToModel);
-    this.cacheService.set(cacheKey, result, NOTEBOOK_TTL_MS);
+    this.cacheService.set(cacheKey, result, NOTEBOOK_LIST_TTL_MS);
     return result;
   }
 
@@ -70,7 +73,7 @@ export class NotebooksService {
     }
 
     const model = mapDbNotebookToModel(notebook);
-    this.cacheService.set(cacheKey, model, NOTEBOOK_TTL_MS);
+    this.cacheService.set(cacheKey, model, NOTEBOOK_DETAIL_TTL_MS);
     return model;
   }
 

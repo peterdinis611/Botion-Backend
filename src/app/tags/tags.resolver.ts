@@ -6,6 +6,7 @@ import {
   ResolveField,
   Parent,
   ID,
+  Directive,
 } from '@nestjs/graphql';
 import { TagsService } from './tags.service';
 import { Tag } from './tag.model';
@@ -25,6 +26,7 @@ export class TagsResolver {
     private readonly usersService: UsersService,
   ) {}
 
+  @Directive('@cacheControl(maxAge: 90, scope: PRIVATE)')
   @Query(() => [Tag], { name: 'tags' })
   async getTags(
     @CurrentUser() currentUser: JwtPayload,
@@ -39,6 +41,7 @@ export class TagsResolver {
     });
   }
 
+  @Directive('@cacheControl(maxAge: 90, scope: PRIVATE)')
   @Query(() => [Tag], { name: 'workspaceTags' })
   async getWorkspaceTags(
     @CurrentUser() currentUser: JwtPayload,

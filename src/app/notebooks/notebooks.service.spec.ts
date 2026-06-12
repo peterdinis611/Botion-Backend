@@ -91,7 +91,7 @@ describe('NotebooksService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'user:user1:notebooks',
         expect.any(Array),
-        60_000,
+        180_000,
       );
       expect(result).toEqual(mockNotebooks);
     });
@@ -133,7 +133,7 @@ describe('NotebooksService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'notebook:1:user:user1',
         expect.any(Object),
-        60_000,
+        180_000,
       );
       expect(result).toEqual(mockNotebook);
     });

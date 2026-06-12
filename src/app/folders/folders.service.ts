@@ -15,7 +15,10 @@ import { CacheService } from '../../cache/cache.service';
 import { NotebooksService } from '../notebooks/notebooks.service';
 import { Notebook } from '../notebooks/notebook.model';
 
-const FOLDER_TTL_MS = 60_000; // 60 seconds
+import { CACHE_TTL_DETAIL_MS, CACHE_TTL_LIST_STABLE_MS } from '../../cache/cache.constants';
+
+const FOLDER_LIST_TTL_MS = CACHE_TTL_LIST_STABLE_MS;
+const FOLDER_DETAIL_TTL_MS = CACHE_TTL_DETAIL_MS;
 
 export type DbFolder = typeof folders.$inferSelect;
 
@@ -55,7 +58,7 @@ export class FoldersService {
       .all();
 
     const result = rows.map(mapDbFolderToModel);
-    this.cacheService.set(cacheKey, result, FOLDER_TTL_MS);
+    this.cacheService.set(cacheKey, result, FOLDER_LIST_TTL_MS);
     return result;
   }
 
@@ -78,7 +81,7 @@ export class FoldersService {
     }
 
     const model = mapDbFolderToModel(folder);
-    this.cacheService.set(cacheKey, model, FOLDER_TTL_MS);
+    this.cacheService.set(cacheKey, model, FOLDER_DETAIL_TTL_MS);
     return model;
   }
 

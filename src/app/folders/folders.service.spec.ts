@@ -90,7 +90,7 @@ describe('FoldersService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'user:user1:folders',
         expect.any(Array),
-        60_000,
+        180_000,
       );
       expect(result).toEqual(mockFolders);
     });
@@ -129,7 +129,7 @@ describe('FoldersService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'folder:1:user:user1',
         expect.any(Object),
-        60_000,
+        180_000,
       );
       expect(result).toEqual(mockFolder);
     });

@@ -11,6 +11,11 @@ import { and, eq, desc } from 'drizzle-orm';
 import * as crypto from 'crypto';
 import { CreateGraphInput, UpdateGraphInput } from './graph.dto';
 import { Graph } from './graph.model';
+import { CacheService } from '../../cache/cache.service';
+import {
+  CACHE_TTL_DETAIL_MS,
+  CACHE_TTL_META_MS,
+} from '../../cache/cache.constants';
 
 export type DbGraph = typeof graphs.$inferSelect;
 
@@ -32,7 +37,17 @@ export function mapDbGraphToModel(row: DbGraph): Graph {
 
 @Injectable()
 export class GraphsService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    private readonly cacheService: CacheService,
+  ) {}
+
+  private invalidateUserGraphs(userId: string, graphId?: string): void {
+    this.cacheService.delete(`user:${userId}:graphs`);
+    if (graphId) {
+      this.cacheService.delete(`graph:${graphId}:user:${userId}`);
+    }
+  }
 
   private parseJsonArray(raw: string | undefined, field: string): string {
     if (raw === undefined) return EMPTY_ARRAY_JSON;
@@ -67,6 +82,12 @@ export class GraphsService {
   }
 
   async findAll(userId: string): Promise<Graph[]> {
+    const cacheKey = `user:${userId}:graphs`;
+    const cached = this.cacheService.get<Graph[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const rows = this.db
       .select()
       .from(graphs)
@@ -74,10 +95,18 @@ export class GraphsService {
       .orderBy(desc(graphs.updatedAt))
       .all();
 
-    return rows.map(mapDbGraphToModel);
+    const result = rows.map(mapDbGraphToModel);
+    this.cacheService.set(cacheKey, result, CACHE_TTL_META_MS);
+    return result;
   }
 
   async findOne(id: string, userId: string): Promise<Graph> {
+    const cacheKey = `graph:${id}:user:${userId}`;
+    const cached = this.cacheService.get<Graph>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const row = this.db
       .select()
       .from(graphs)
@@ -88,7 +117,9 @@ export class GraphsService {
       throw new NotFoundException(`Graph with ID "${id}" not found.`);
     }
 
-    return mapDbGraphToModel(row);
+    const model = mapDbGraphToModel(row);
+    this.cacheService.set(cacheKey, model, CACHE_TTL_DETAIL_MS);
+    return model;
   }
 
   async create(input: CreateGraphInput, userId: string): Promise<Graph> {
@@ -114,6 +145,7 @@ export class GraphsService {
       })
       .run();
 
+    this.invalidateUserGraphs(userId);
     return this.findOne(id, userId);
   }
 
@@ -144,6 +176,7 @@ export class GraphsService {
       .where(and(eq(graphs.id, input.id), eq(graphs.userId, userId)))
       .run();
 
+    this.invalidateUserGraphs(userId, input.id);
     return this.findOne(input.id, userId);
   }
 
@@ -153,6 +186,7 @@ export class GraphsService {
       .delete(graphs)
       .where(and(eq(graphs.id, id), eq(graphs.userId, userId)))
       .run();
+    this.invalidateUserGraphs(userId, id);
     return true;
   }
 }

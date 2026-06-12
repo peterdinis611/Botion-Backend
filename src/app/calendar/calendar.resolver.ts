@@ -6,6 +6,7 @@ import {
   ResolveField,
   Parent,
   ID,
+  Directive,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
@@ -28,6 +29,7 @@ export class CalendarResolver {
     private readonly usersService: UsersService,
   ) {}
 
+  @Directive('@cacheControl(maxAge: 60, scope: PRIVATE)')
   @Query(() => [CalendarEvent], { name: 'calendarEvents' })
   async getCalendarEvents(
     @CurrentUser() currentUser: JwtPayload,

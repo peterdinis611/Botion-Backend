@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { ThrottlerModule } from '@nestjs/throttler';
 import responseCachePlugin from '@apollo/server-plugin-response-cache';
 import { join } from 'path';
 import { DrizzleModule } from './drizzle/drizzle.module';
@@ -12,18 +14,35 @@ import { AppFeaturesModule } from './app/app-features.module';
 import { EventsModule } from './events/events.module';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtPayload } from './auth/current-user.decorator';
+import { GqlThrottlerGuard } from './auth/gql-throttler.guard';
 import type { Context } from 'graphql-ws';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 180 },
+      { name: 'auth', ttl: 600_000, limit: 10 },
+      { name: 'demo', ttl: 3_600_000, limit: 3 },
+    ]),
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       imports: [AuthModule],
       inject: [JwtService],
       useFactory: (jwtService: JwtService) => ({
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-        plugins: [responseCachePlugin()],
+        plugins: [
+          responseCachePlugin({
+            sessionId: async (requestContext) => {
+              const user = (
+                requestContext.contextValue as
+                  | { req?: { user?: JwtPayload } }
+                  | undefined
+              )?.req?.user;
+              return user?.sub ?? null;
+            },
+          }),
+        ],
         subscriptions: {
           'graphql-ws': {
             onConnect: async (context: Context) => {
@@ -77,5 +96,6 @@ import type { Context } from 'graphql-ws';
     EventsModule,
     AppFeaturesModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
 export class AppModule {}

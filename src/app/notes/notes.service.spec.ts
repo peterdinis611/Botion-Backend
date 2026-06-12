@@ -161,7 +161,7 @@ describe('NotesService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'user:user1:notes:archived:false:nb::folder:folder1:pin::q::tags:',
         expect.any(Array),
-        60_000,
+        90_000,
       );
       expect(result[0].id).toBe('2');
     });
@@ -200,7 +200,7 @@ describe('NotesService', () => {
       expect(cacheService.set).toHaveBeenCalledWith(
         'note:1:user:user1',
         expect.any(Object),
-        60_000,
+        120_000,
       );
       expect(result.id).toBe('1');
     });

@@ -11,6 +11,8 @@ import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { CreateTagInput, UpdateTagInput } from './tag.dto';
 import { Tag } from './tag.model';
 import { NotebooksService } from '../notebooks/notebooks.service';
+import { CacheService } from '../../cache/cache.service';
+import { CACHE_TTL_META_MS } from '../../cache/cache.constants';
 import * as crypto from 'crypto';
 
 export type DbTag = typeof tags.$inferSelect;
@@ -37,7 +39,12 @@ export class TagsService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly notebooksService: NotebooksService,
+    private readonly cacheService: CacheService,
   ) {}
+
+  private invalidateUserTags(userId: string): void {
+    this.cacheService.clearPattern(`user:${userId}:tags:*`);
+  }
 
   private async assertNotebookAccess(
     notebookId: string | null | undefined,
@@ -97,6 +104,12 @@ export class TagsService {
       includeGlobal?: boolean;
     } = {},
   ): Promise<Tag[]> {
+    const cacheKey = `user:${userId}:tags:all:nb:${options.notebookId ?? ''}:global:${options.includeGlobal ?? true}`;
+    const cached = this.cacheService.get<Tag[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [eq(tags.userId, userId)];
 
     if (options.notebookId) {
@@ -119,7 +132,9 @@ export class TagsService {
       .orderBy(asc(tags.sortOrder), asc(tags.name))
       .all();
 
-    return this.attachNoteCounts(userId, rows);
+    const result = await this.attachNoteCounts(userId, rows);
+    this.cacheService.set(cacheKey, result, CACHE_TTL_META_MS);
+    return result;
   }
 
   /** Tags defined for a notebook plus tags used on notes in that notebook. */
@@ -127,6 +142,12 @@ export class TagsService {
     userId: string,
     notebookId: string,
   ): Promise<Tag[]> {
+    const cacheKey = `user:${userId}:tags:workspace:${notebookId}`;
+    const cached = this.cacheService.get<Tag[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     await this.notebooksService.findOne(notebookId, userId);
 
     const scoped = await this.findAll(userId, {
@@ -173,7 +194,9 @@ export class TagsService {
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     );
 
-    return this.attachNoteCounts(userId, merged);
+    const result = await this.attachNoteCounts(userId, merged);
+    this.cacheService.set(cacheKey, result, CACHE_TTL_META_MS);
+    return result;
   }
 
   async findOne(id: string, userId: string): Promise<Tag> {
@@ -233,6 +256,7 @@ export class TagsService {
     };
 
     this.db.insert(tags).values(newTag).run();
+    this.invalidateUserTags(userId);
     return this.findOne(id, userId);
   }
 
@@ -270,6 +294,7 @@ export class TagsService {
       .where(and(eq(tags.id, input.id), eq(tags.userId, userId)))
       .run();
 
+    this.invalidateUserTags(userId);
     return this.findOne(input.id, userId);
   }
 
@@ -282,6 +307,7 @@ export class TagsService {
       .where(and(eq(tags.id, id), eq(tags.userId, userId)))
       .run();
 
+    this.invalidateUserTags(userId);
     return true;
   }
 
@@ -328,5 +354,7 @@ export class TagsService {
     for (const tagId of tagIds) {
       this.db.insert(notesToTags).values({ noteId, tagId }).run();
     }
+
+    this.invalidateUserTags(userId);
   }
 }

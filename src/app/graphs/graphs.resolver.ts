@@ -6,6 +6,7 @@ import {
   ResolveField,
   Parent,
   ID,
+  Directive,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { GraphsService } from './graphs.service';
@@ -25,6 +26,7 @@ export class GraphsResolver {
     private readonly usersService: UsersService,
   ) {}
 
+  @Directive('@cacheControl(maxAge: 90, scope: PRIVATE)')
   @Query(() => [Graph], { name: 'graphs' })
   async getGraphs(@CurrentUser() currentUser: JwtPayload) {
     return this.graphsService.findAll(currentUser.sub);

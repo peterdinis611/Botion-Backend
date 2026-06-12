@@ -18,7 +18,13 @@ import { CacheService } from '../../cache/cache.service';
 import { EventsPubSubService } from '../../events/events-pub-sub.service';
 import { AppEventAction } from '../../events/app-event-action.enum';
 
-const CALENDAR_TTL_MS = 60_000;
+import {
+  CACHE_TTL_DETAIL_MS,
+  CACHE_TTL_LIST_HOT_MS,
+} from '../../cache/cache.constants';
+
+const CALENDAR_LIST_TTL_MS = CACHE_TTL_LIST_HOT_MS;
+const CALENDAR_DETAIL_TTL_MS = CACHE_TTL_DETAIL_MS;
 
 export type DbCalendarEvent = typeof calendarEvents.$inferSelect;
 
@@ -76,7 +82,7 @@ export class CalendarService {
         (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
       );
 
-    this.cacheService.set(cacheKey, result, CALENDAR_TTL_MS);
+    this.cacheService.set(cacheKey, result, CALENDAR_LIST_TTL_MS);
     return result;
   }
 
@@ -98,7 +104,7 @@ export class CalendarService {
     }
 
     const model = mapDbCalendarEventToModel(row);
-    this.cacheService.set(cacheKey, model, CALENDAR_TTL_MS);
+    this.cacheService.set(cacheKey, model, CALENDAR_DETAIL_TTL_MS);
     return model;
   }
 
