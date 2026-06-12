@@ -48,10 +48,6 @@ Copy `.env.example` to `.env`:
 | `PORT` | `3000` | HTTP port |
 | `FRONTEND_URL` | `http://localhost:3001` | CORS allowed origin |
 | `DEMO_ACCOUNTS_ENABLED` | enabled | Set to `false` to disable `createDemoAccount` |
-| `TMP_FILE_MAX_AGE_HOURS` | — | Temp upload cleanup age |
-| `TMP_CLEANUP_ENABLED` | enabled | Set to `false` to disable temp file cleanup job |
-| `TMP_CLEANUP_CRON` | hourly | Cron expression for cleanup |
-
 ## Database
 
 - **File:** `backend/sqlite.db` (gitignored)
@@ -89,8 +85,7 @@ src/
     ├── graphs/        # Flow diagrams (React Flow payload)
     ├── calendar/      # Calendar events
     ├── workspace/     # Invites, collaborators, page share links
-    ├── notifications/
-    └── files/         # Uploads and temp file cleanup
+    └── notifications/
 ```
 
 Generated GraphQL schema: `src/schema.gql` (auto-updated in dev).
@@ -130,8 +125,6 @@ Authorization: Bearer <token>
 - Run commands from **`backend/`**, not the repo root.
 - After `nest build`, runtime still resolves DB and migrations from the backend package root (see `drizzle.provider.ts`).
 - Soft delete for notes uses `isArchived`; deleting a notebook archives its notes first.
-- File uploads are served under the files module; temp uploads are cleaned on a schedule.
-
 ## Related
 
 - [Frontend README](../frontend/README.md)
